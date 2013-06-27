@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Displacement Sensor Monitoring</title>
+
+  <link rel="stylesheet" href="css/base.css" type="text/css">
+  <link rel="stylesheet" href="css/layout.css" type="text/css">
+  <style type="text/css" media="screen">
+    body {
+      background: #333333;
+    }
+  </style>
+
+  <script src="js/jquery-1.10.1.min.js" type="text/javascript" charset="utf-8"></script>
+  <script src="js/date.format.js" type="text/javascript" charset="utf-8"></script>
+  <script src="js/SensorData.js" type="text/javascript" charset="utf-8"></script>
+  <script src="js/TimeseriesPlot.js" type="text/javascript" charset="utf-8"></script>
+  <script src="js/DisplacementPlot.js" type="text/javascript" charset="utf-8"></script>
+  <script src="js/ScrubberPlot.js" type="text/javascript" charset="utf-8"></script>
+  <script src="js/Palette.js" type="text/javascript" charset="utf-8"></script>
+  <script type="text/javascript" charset="utf-8">
+  
+  // ============
+  // = Settings =
+  // ============
+
+  var options = {
+    // max expected sensor range
+    range: 20.0,
+    // a sorted list of value thresholds
+    thresholds: [
+      5, 10, 15, 20,
+    ],
+    // for each threshold band: a colour hue
+    hues: [
+      120,  // green
+      60,   // amber
+      0,    // red
+      0,    // red (should be black)
+    ],
+  };
+  
+  // ========
+  // = Init =
+  // ========
+  
+  var feed = null;
+  var numEntries = null;
+  var highlightedEntryIdx = null;
+  
+  var isScrubbing = false;
+  
+  // load data
+  SensorData.loadAjaxData([
+    'data/data1.txt', 'data/data2.txt', 'data/data3.txt', 'data/data4.txt', 
+    'data/data5.txt', 'data/data6.txt', 'data/data7.txt', 'data/data8.txt', 
+    'data/data9.txt', 'data/data10.txt', 'data/data11.txt', 'data/data12.txt', 
+  ]);
+
+  $(document).ajaxStop(function() {
+    randomiseFeedData();
+    initScrubber();
+  });
+  
+  // initialise plots
+  var palette;
+  var timeseriesPlot;
+  var displacementPlot;
+  var scrubberPlot;
+  
+  $(document).ready(function() {
+    palette = new Palette(options);
+    timeseriesPlot = new TimeseriesPlot($("#timeseriesCanvas")[0]);
+    displacementPlot = new DisplacementPlot($("#plotCanvas")[0], palette, options);
+    scrubberPlot = new ScrubberPlot($("#scrubberCanvas")[0], palette, options);
+  });
+  
+  // ================
+  // = Interactions =
+  // ================
+
+  function randomiseFeedData() {
+    feed = SensorData.buildRandomSensorFeed();
+    show(feed, feed.size);
+  }
+  
+  function show(feed, _numEntries) {
+    numEntries = _numEntries;
+    if (!numEntries) {
+      numEntries = feed.size;
+    } else {
+      numEntries = Math.min(feed.size, numEntries);
+    }
+    showTimeseries(feed, numEntries);
+    showPlot(feed, numEntries);
+    showScrubber(feed, numEntries);
+  };
+  
+  function redraw() {
+    show(feed, numEntries);
+  }
+  
+  function showTimeseries(feed, numEntries) {
+    var canvas = document.getElementById("timeseriesCanvas");
+    var ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    var beginIdx = feed.size - numEntries;
+    var endIdx = feed.size - 1;
+    timeseriesPlot.draw(feed.x.slice(beginIdx, endIdx), 0, 0, canvas.width, 45);
+    timeseriesPlot.draw(feed.y.slice(beginIdx, endIdx), 0, 55, canvas.width, 99);
+  }
+
+  function showPlot(feed, numEntries) {
+    var canvas = document.getElementById("plotCanvas");
+    var ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    displacementPlot.draw(feed, numEntries, highlightedEntryIdx);
+  };
+  
+  function showScrubber(feed, numEntries) {
+    var canvas = document.getElementById("scrubberCanvas");
+    var ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    scrubberPlot.draw(feed, numEntries, highlightedEntryIdx);
+  };
+  
+  function highlightEntry(idx) {
+    highlightedEntryIdx = Math.max(0, Math.min(feed.size-1, idx));
+    var date = feed.dates[highlightedEntryIdx];
+    var x = feed.x[highlightedEntryIdx];
+    var y = feed.y[highlightedEntryIdx];
+    var displacement = Math.sqrt(x*x + y*y);
+
+    // fake the date
+    // assuming hourly measurements, last measurement is at least 1h in the past.
+    var oneHour = 1000*60*60;
+    var oneDay = oneHour*24;
+    var numDays = (feed.size + 1) / 24; 
+    var firstDate = new Date(new Date().getTime() - numDays * oneDay);
+    var timestamp = new Date(firstDate.getTime() + idx * oneHour);
+    
+    redraw();
+    $("#scrubberInfo").html(
+      timestamp.format('yyyy-mm-dd HH:MM') + 
+      " <strong>X</strong>=" + x.toFixed(2) + 
+      " <strong>Y</strong>=" + y.toFixed(2) +
+      " <strong>magnitude</strong>=" + displacement.toFixed(2));
+  }
+  
+  function hideHighlightedEntry() {
+    highlightedEntryIdx = null;
+    redraw();
+    $("#scrubberInfo").html("&nbsp;");
+  }
+  
+  function initScrubber() {
+    var getIndex = function(e, jqNode) {
+      var x = e.pageX - jqNode.offset().left;
+      return (feed.size-numEntries) + Math.round(x * numEntries / jqNode.width());
+    };
+
+    // mouse events
+    $('#scrubberCanvas').on('mousedown', function(e) {
+      e.preventDefault();
+      $this = $(this);
+      isScrubbing = true;
+      highlightEntry(getIndex(e, $this));
+    });
+    $(window).on('mousemove', function(e) {
+      if (!isScrubbing) return;
+      highlightEntry(getIndex(e, $this));
+    });
+    $(window).on('mouseup', function(e) {
+      if (!isScrubbing) return;
+      isScrubbing = false;
+      hideHighlightedEntry();
+    });
+    
+    // touch events
+    $('#scrubberCanvas').on('touchstart', function(e) {
+      if (!e.originalEvent.changedTouches) return;
+      e.preventDefault();
+      $this = $(this);
+      isScrubbing = true;
+      highlightEntry(getIndex(e.originalEvent.changedTouches[0], $this));
+    });
+    $(window).on('touchmove', function(e) {
+      if (!e.originalEvent.changedTouches) return;
+      if (!isScrubbing) return;
+      highlightEntry(getIndex(e.originalEvent.changedTouches[0], $this));
+    });
+    $(window).on('touchend touchcancel touchleave', function(e) {
+      if (!e.originalEvent.changedTouches) return;
+      if (!isScrubbing) return;
+      isScrubbing = false;
+      hideHighlightedEntry();
+    });
+  }
+</script>
+</head>
+<body>
+
+<div id="container">
+
+  <div id="statusbar">
+    <h1 class="left">Displacement Sensor Monitoring</h1>
+    <span class="right">
+      <a href="javascript:randomiseFeedData()">Randomise</a> &middot;
+      <a href="javascript:$('#infobox').toggle();">Info</a>
+    </span>
+  </div>
+
+  <div id="infobox">
+    <h2>Sensor data history (X, Y)</h2>
+    <canvas id="timeseriesCanvas" width="500" height="100"></canvas>
+  </div>
+
+  <div id="visbox">
+    <canvas id="plotCanvas" width="500" height="500"></canvas>
+    <p>
+      Show the last <a href="javascript:show(feed, 24)">day</a>, 
+      <a href="javascript:show(feed, 24*7)">week</a>, 
+      <a href="javascript:show(feed, 24*7*30)">month</a>.
+    </p>
+
+    <p><span id="scrubberInfo"></span>&nbsp;</p>
+    <p>Tap and drag below to select a measurement within the period:</p>
+    <canvas id="scrubberCanvas" width="500" height="100"></canvas>
+  </div>
+  
+</div>
+
+</body>
+</html>

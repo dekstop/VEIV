@@ -1,0 +1,48 @@
+/*
+	Layout
+*/
+
+#container {
+	width: 100%;
+	position: relative;
+}
+
+#statusbar {
+  color: #ffffff;
+  background: #336699;
+	padding-right: 0.5em;
+	padding-left: 0.5em;
+}
+#statusbar h1 {
+  display: inline;
+  font-size: 1em;
+  font-weight: normal;
+}
+#statusbar a {
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.right {
+  float: right;
+}
+
+#infobox {
+  color: #ffffff;
+  background: #6699aa;
+  display: none;
+}
+
+#visbox {
+  color: #cccccc;
+  background: #333333;
+	margin: 10px;
+}
+#visbox a {
+  color: #ffffff;
+/*  font-weight: bold;*/
+}
+
+#scrubberInfo {
+	color: #ffffff;
+}
