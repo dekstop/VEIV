@@ -15,7 +15,7 @@ var SensorData = {
     }
   },
 
-  // Returns an object: { size, dates=[...], x=[...], y=[...] }
+  // Returns an object: { name, size, dates=[...], x=[...], y=[...] }
   // That object also has a few utility functions.
   buildRandomSensorFeed: function() {
     var sensorX = SensorData.sensors[Math.floor(Math.random() * SensorData.sensors.length)];
@@ -24,6 +24,7 @@ var SensorData = {
     var _x = SensorData._getValues(sensorX);
     var _y = SensorData._getValues(sensorY);
     return {
+      name: ("Sensor " + Math.floor((Math.random()*1000)+1)),
       size: Math.min(_x.length, _y.length),
       dates: _dates,
       x: _x,
@@ -33,7 +34,17 @@ var SensorData = {
           date: this.dates[idx],
           x: this.x[idx],
           y: this.y[idx],
+          displacement: Math.sqrt(this.x[idx]*this.x[idx] + this.y[idx]*this.y[idx]),
         };
+      },
+      getValues: function() { 
+        return this.getValuesAt(this.size-1);
+      },
+      getDisplacementAt: function(idx) {
+        return this.getValuesAt(idx).displacement;
+      },
+      getDisplacement: function() { 
+        return this.getDisplacementAt(this.size-1);
       },
     };
   },

@@ -3,46 +3,114 @@
 */
 
 #container {
-	width: 100%;
+/*  width: 100%;*/
 	position: relative;
 }
 
-#statusbar {
-  color: #ffffff;
-  background: #336699;
-	padding-right: 0.5em;
-	padding-left: 0.5em;
-}
-#statusbar h1 {
-  display: inline;
-  font-size: 1em;
-  font-weight: normal;
-}
-#statusbar a {
-  color: #ffffff;
-  text-decoration: none;
+#welcomePanel, #arrayPanel, #sensorPanel {
 }
 
-.right {
-  float: right;
+#mapPanel, #arrayinfoPanel, #sensorinfoPanel {
 }
 
-#infobox {
-  color: #ffffff;
-  background: #6699aa;
+#welcomePanel, 
+/*#arrayPanel, */
+#sensorPanel 
+{
   display: none;
 }
 
-#visbox {
-  color: #cccccc;
-  background: #333333;
-	margin: 10px;
+#mapPanel, 
+/*#arrayinfoPanel, */
+#sensorinfoPanel 
+{
+  display: none;
 }
-#visbox a {
+
+/* 
+  Status bar/main menu
+*/
+
+#statusBar {
+/*  width: 100%;*/
+  color: #ffffff;
+  background: #336699;
+	padding-top: 0;
+	padding-right: 0.5em;
+	padding-bottom: 0;
+	padding-left: 0.5em;
+  margin: 0;
+}
+#statusBar a {
+  color: #ffffff;
+  text-decoration: none;
+}
+#statusBar h1 {
+  display: inline;
+  float: left;
+  font-size: 1em;
+  font-weight: normal;
+	padding-top: 0;
+	padding-right: 0.5em;
+	padding-bottom: 0;
+	padding-left: 0;
+  margin: 0;
+}
+
+#statusBar ul.menu {
+/*  margin: 0;*/
+/*  padding: 0;*/
+}
+#statusBar .menu li {
+  display: inline;
+  float: left;
+	padding-top: 0.5em;
+	padding-right: 0.5em;
+	padding-bottom: 0.5em;
+	padding-left: 0.5em;
+  margin: 0;
+}
+
+#debugPanel {
+  display: none;
+  color: #ffffff;
+  background: #6699aa;
+}
+
+/*
+  Welcome screen and map view.
+*/
+
+#welcomePanel {
+}
+
+#mapPanel {
+}
+
+/*
+  Array view.
+*/
+
+#arrayPanel {
+}
+
+#arrayinfoPanel {
+}
+
+/*
+  Sensor view.
+*/
+
+#sensorPanel {
+}
+#sensorPanel a {
   color: #ffffff;
 /*  font-weight: bold;*/
 }
 
 #scrubberInfo {
 	color: #ffffff;
+}
+
+#sensorinfoPanel {
 }

@@ -1,43 +1,64 @@
 // Draw a displacement plot onto a canvas.
 // Requires jQuery.
 
+// Options:
+// - thresholds: [5, 10, 15, ...]
+// - range: 20
 function DisplacementPlot(canvas, palette, options) {
-  this.canvas = canvas;
-  this.ctx = canvas.getContext('2d');
-  this.radius = Math.min(canvas.width / 2, canvas.height / 2) - 20;
-  this.palette = palette;
-  this.options = options;
+  this.realCanvas = canvas;
+  this.realCtx = canvas.getContext('2d');
+
+   // double-buffering
+  this.canvas = document.createElement('canvas');
+  this.canvas.width = this.realCanvas.width;
+  this.canvas.height = this.realCanvas.height;
+  this.ctx = this.canvas.getContext('2d');
+
+  this.x = this.canvas.width / 2;
+  this.y = this.canvas.height / 2;
+  this.radius = Math.min(this.canvas.width / 2, this.canvas.height / 2) - 20;
+  this.palette = jQuery.extend({}, palette);
+  this.options = jQuery.extend({}, options);
+
+  this.feed = null
+  this.numEntries = null;
 }
 
-DisplacementPlot.prototype.draw = function(feed, numEntries, highlightedEntryIdx) {
-  var x = this.canvas.width / 2;
-  var y = this.canvas.height / 2;
-
+DisplacementPlot.prototype.setData = function(feed, numEntries) {
+  this.feed = feed;
   if (!numEntries) {
-    numEntries = feed.size;
+    this.numEntries = this.feed.size;
   } else {
-    numEntries = Math.min(feed.size, numEntries);
+    this.numEntries = Math.min(this.feed.size, numEntries);
   }
-  if (numEntries<2) return; // Nothing to draw.
-
-  // draw
-  this.drawPlotOverrun(x, y, feed.getValuesAt(feed.size-1));
-  this.drawThresholds(x, y);
-  this.drawPlotDots(x, y, feed, numEntries);
-  this.drawPlotPath(x, y, feed, numEntries);
-
-  if (highlightedEntryIdx!=null) {
-    this.drawPlotHighlight(x, y, feed.getValuesAt(highlightedEntryIdx));
+  
+  // draw into off-screen buffer
+  this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+  if (this.numEntries<2) return; // Nothing to draw.
+  if (!this.options.simplified) {
+    this.drawPlotOverrun(this.feed.getValues());
+    this.drawThresholds();
+  } 
+  this.drawPlotDots();
+  if (!this.options.simplified) {
+    this.drawPlotPath();
   }
+}
+
+DisplacementPlot.prototype.draw = function() {
+  if (this.options.clear) {
+    this.realCtx.clearRect(0, 0, this.realCanvas.width, this.realCanvas.height);
+  }
+  this.realCtx.drawImage(this.canvas, 0, 0);
 };
 
-DisplacementPlot.prototype.drawThresholds = function(x, y) {
+DisplacementPlot.prototype.drawThresholds = function() {
   for (var i=0; i<this.options.thresholds.length; i++) {
     var ratio = this.options.thresholds[i] / this.options.range;
 
     // circle
     this.ctx.beginPath();
-    this.ctx.arc(x, y, this.radius*ratio, 0, 2*Math.PI);
+    this.ctx.arc(this.x, this.y, this.radius*ratio, 0, 2*Math.PI);
     this.ctx.strokeStyle = "rgba(90,90,90,1)"; 
     this.ctx.lineWidth = 1;
     this.ctx.stroke();
@@ -46,47 +67,46 @@ DisplacementPlot.prototype.drawThresholds = function(x, y) {
     this.ctx.font="10px Helvetica";
     this.ctx.textAlign="center";
     this.ctx.fillStyle = "rgba(110,110,110,1)"; 
-    this.ctx.fillText(this.options.thresholds[i] + "mm", x, y + this.radius*ratio - 8);
-    this.ctx.fillText(this.options.thresholds[i] + "mm", x, y - this.radius*ratio + 14);
+    this.ctx.fillText(this.options.thresholds[i] + "mm", this.x, this.y + this.radius*ratio - 8);
+    this.ctx.fillText(this.options.thresholds[i] + "mm", this.x, this.y - this.radius*ratio + 14);
   }
 };
 
-DisplacementPlot.prototype.drawPlotDots = function(x, y, feed, numEntries) {
-  var firstIdx = feed.size - numEntries;
-  for (var i=firstIdx; i<feed.size; i++) {
-    var val = feed.getValuesAt(i);
+DisplacementPlot.prototype.drawPlotDots = function() {
+  var firstIdx = this.feed.size - this.numEntries;
+  for (var i=firstIdx; i<this.feed.size; i++) {
+    var val = this.feed.getValuesAt(i);
     var dx = this.project(val.x);
     var dy = this.project(val.y);
 
-    var displacement = Math.sqrt(val.x*val.x + val.y*val.y);
-    var age = (i-firstIdx) / numEntries;
-    var style = this.palette.getColour(displacement, age);
+    var age = (i-firstIdx) / this.numEntries;
+    var style = this.palette.getColour(val.displacement, age);
 
     this.ctx.beginPath();
-    this.ctx.arc(x + dx, y + dy, 10, 0, 2*Math.PI);
+    this.ctx.arc(this.x + dx, this.y + dy, this.options.dotRadius, 0, 2*Math.PI);
     this.ctx.fillStyle = style; 
     this.ctx.fill();
   }
 };
 
-DisplacementPlot.prototype.drawPlotPath = function(x, y, feed, numEntries) {
-  var firstIdx = feed.size - numEntries;
-  var val = feed.getValuesAt(firstIdx);
+DisplacementPlot.prototype.drawPlotPath = function() {
+  var firstIdx = this.feed.size - this.numEntries;
+  var val = this.feed.getValuesAt(firstIdx);
   var dx = this.project(val.x);
   var dy = this.project(val.y);
 
-  for (var i=firstIdx+1; i<feed.size; i++) {
+  for (var i=firstIdx+1; i<this.feed.size; i++) {
     this.ctx.beginPath();
-    this.ctx.moveTo(x + dx, y + dy);
+    this.ctx.moveTo(this.x + dx, this.y + dy);
   
-    val = feed.getValuesAt(i);
+    val = this.feed.getValuesAt(i);
     dx = this.project(val.x);
     dy = this.project(val.y);
 
-    var age = (i-firstIdx) / numEntries;
+    var age = (i-firstIdx) / this.numEntries;
     // var a = 180 + Math.round(age*75);
 
-    this.ctx.lineTo(x + dx, y + dy);
+    this.ctx.lineTo(this.x + dx, this.y + dy);
     // this.ctx.strokeStyle = "rgba("+a+","+a+","+a+",1)"; 
     this.ctx.strokeStyle = "rgba(255,255,255," + (0.2 + age*age*0.8) + ")"; 
     this.ctx.lineWidth = 2;
@@ -94,27 +114,7 @@ DisplacementPlot.prototype.drawPlotPath = function(x, y, feed, numEntries) {
   }
 };
 
-DisplacementPlot.prototype.drawPlotHighlight = function(x, y, val) {
-  var dx = this.project(val.x);
-  var dy = this.project(val.y);
-
-  // larger circle
-  this.ctx.beginPath();
-  this.ctx.arc(x + dx, y + dy, 30, 0, 2*Math.PI);
-  this.ctx.fillStyle = 'rgba(255,255,255,0.5)'; 
-  this.ctx.fill();
-  this.ctx.strokeStyle = 'rgba(255,255,255,1)'; 
-  this.ctx.lineWidth = 5;
-  this.ctx.stroke();
-
-  // center dot
-  this.ctx.beginPath();
-  this.ctx.arc(x + dx, y + dy, 5, 0, 2*Math.PI);
-  this.ctx.fillStyle = 'rgba(255,255,255,1)'; 
-  this.ctx.fill();
-};
-
-DisplacementPlot.prototype.drawPlotOverrun = function(x, y, val) {
+DisplacementPlot.prototype.drawPlotOverrun = function(val) {
   var displacement = Math.sqrt(val.x*val.x + val.y*val.y);
   if (displacement<this.options.range) {
     return;
@@ -128,10 +128,32 @@ DisplacementPlot.prototype.drawPlotOverrun = function(x, y, val) {
 
   // larger circle
   this.ctx.beginPath();
-  this.ctx.arc(x, y, this.radius + 10, bearing - d, bearing + d);
+  this.ctx.arc(this.x, this.y, this.radius + 10, bearing - d, bearing + d);
   this.ctx.strokeStyle = 'rgba(255,0,0,0.4)'; 
   this.ctx.lineWidth = 20;
   this.ctx.stroke();
+};
+
+// NOTE: this is *not* drawing into the off-screen buffer!
+DisplacementPlot.prototype.drawHighlight = function(idx) {
+  var val = this.feed.getValuesAt(idx)
+  var dx = this.project(val.x);
+  var dy = this.project(val.y);
+
+  // larger circle
+  this.realCtx.beginPath();
+  this.realCtx.arc(this.x + dx, this.y + dy, 30, 0, 2*Math.PI);
+  this.realCtx.fillStyle = 'rgba(255,255,255,0.5)'; 
+  this.realCtx.fill();
+  this.realCtx.strokeStyle = 'rgba(255,255,255,1)'; 
+  this.realCtx.lineWidth = 5;
+  this.realCtx.stroke();
+
+  // center dot
+  this.realCtx.beginPath();
+  this.realCtx.arc(this.x + dx, this.y + dy, 5, 0, 2*Math.PI);
+  this.realCtx.fillStyle = 'rgba(255,255,255,1)'; 
+  this.realCtx.fill();
 };
 
 // Map a sensor value of [0..maxValue] onto a [0..mappedValue] range.

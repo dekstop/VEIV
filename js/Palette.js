@@ -7,6 +7,7 @@ function Palette(options) {
 // displacement: usually [0..range], can go beyond that
 // age: relative to currently displayed period, [0..1]
 Palette.prototype.getColour = function(displacement, age) {
+  age = (typeof age !== 'undefined' ? age : 1.0);
   var thIdx = 0;
   while (displacement > this.options.thresholds[thIdx]) thIdx++;
   hue = this.options.hues[Math.min(thIdx, this.options.hues.length-1)];
@@ -14,7 +15,7 @@ Palette.prototype.getColour = function(displacement, age) {
     hue + "," + 
     // Math.round(age * 100) + "%," +
     "100%," +
-    Math.round(5 + age * 40) + "%," +
+    Math.round(40 + age * 30) + "%," +
     // "40%," +
-    "0.8)";
+    "1.0)";
 };

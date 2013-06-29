@@ -1,31 +1,54 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   <title>Displacement Sensor Monitoring</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <link rel="stylesheet" href="css/base.css" type="text/css">
-  <link rel="stylesheet" href="css/layout.css" type="text/css">
-  <style type="text/css" media="screen">
-    body {
-      background: #333333;
-    }
-  </style>
+  <link href="css/bootstrap.min.css" rel="stylesheet" media="screen" />
+  <link href="css/bootstrap-responsive.css" rel="stylesheet" />
+  <link rel="stylesheet" href="css/base.css" type="text/css" />
+  <link rel="stylesheet" href="css/layout.css" type="text/css" />
 
-  <script src="js/jquery-1.10.1.min.js" type="text/javascript" charset="utf-8"></script>
-  <script src="js/date.format.js" type="text/javascript" charset="utf-8"></script>
+  <script src="js/ext/jquery-1.10.1.min.js" type="text/javascript" charset="utf-8"></script>
+  <script src="js/ext/bootstrap.min.js" type="text/javascript" charset="utf-8"></script>
+  <script src="js/ext/date.format.js" type="text/javascript" charset="utf-8"></script>
+
   <script src="js/SensorData.js" type="text/javascript" charset="utf-8"></script>
   <script src="js/TimeseriesPlot.js" type="text/javascript" charset="utf-8"></script>
   <script src="js/DisplacementPlot.js" type="text/javascript" charset="utf-8"></script>
+  <script src="js/ArrayPlot.js" type="text/javascript" charset="utf-8"></script>
   <script src="js/ScrubberPlot.js" type="text/javascript" charset="utf-8"></script>
   <script src="js/Palette.js" type="text/javascript" charset="utf-8"></script>
-  <script type="text/javascript" charset="utf-8">
+
+  <style type="text/css" media="screen">
+/*    overriding bootstrap defaults*/
+    body {
+/*      background-color: none;*/
+    }
+/*    @baseFontFamily
+    @baseFontSize
+    @baseLineHeight
+    @linkColor*/
+    .container-fluid {
+      padding: 0;
+    }
+    .row {
+/*      margin-left: 0;*/
+    }
+    .row-fluid [class*="span"] {
+      margin: 0;
+      padding: 10px;
+    }
+  </style>
+
+  <script type="text/javascript">
   
   // ============
   // = Settings =
   // ============
 
-  var options = {
+  var sensorOptions = {
     // max expected sensor range
     range: 20.0,
     // a sorted list of value thresholds
@@ -39,17 +62,30 @@
       0,    // red
       0,    // red (should be black)
     ],
+    clear: true, // clear canvas before drawing? used for plot compositions
+    dotRadius: 10,
+  };
+  
+  var arrayOptions = {
+    sensorAngles: [45, 90, 135, 180, 225, 270, 315],
+    sensorRadius: 10,
+    sensorOptions: sensorOptions
   };
   
   // ========
   // = Init =
   // ========
-  
+
+  // data
+  var sensors = null;
   var feed = null;
-  var numEntries = null;
-  var highlightedEntryIdx = null;
   
-  var isScrubbing = false;
+  // plots
+  var palette;
+  var timeseriesPlot;
+  var arrayPlot;
+  var sensorPlot;
+  var scrubberPlot;
   
   // load data
   SensorData.loadAjaxData([
@@ -58,177 +94,167 @@
     'data/data9.txt', 'data/data10.txt', 'data/data11.txt', 'data/data12.txt', 
   ]);
 
-  $(document).ajaxStop(function() {
-    randomiseFeedData();
-    initScrubber();
-  });
-  
-  // initialise plots
-  var palette;
-  var timeseriesPlot;
-  var displacementPlot;
-  var scrubberPlot;
-  
+  // prepare widgets
   $(document).ready(function() {
-    palette = new Palette(options);
+    palette = new Palette(sensorOptions);
     timeseriesPlot = new TimeseriesPlot($("#timeseriesCanvas")[0]);
-    displacementPlot = new DisplacementPlot($("#plotCanvas")[0], palette, options);
-    scrubberPlot = new ScrubberPlot($("#scrubberCanvas")[0], palette, options);
+    arrayPlot = new ArrayPlot($("#arrayplotCanvas")[0], palette, arrayOptions);
+    sensorPlot = new DisplacementPlot($("#sensorplotCanvas")[0], palette, sensorOptions);
+    scrubberPlot = new ScrubberPlot($("#scrubberCanvas")[0], sensorPlot, $("#scrubberInfo")[0], palette, sensorOptions);
+
+    // initialise the app once all data has been loaded
+    $(document).ajaxStop(function() {
+
+      // prepare data
+      randomiseData();
+      showArrayview(sensors);
+
+      // event handlers
+      arrayPlot.initEventHooks();
+      scrubberPlot.initEventHooks();
+    });
   });
   
   // ================
   // = Interactions =
   // ================
 
-  function randomiseFeedData() {
-    feed = SensorData.buildRandomSensorFeed();
-    show(feed, feed.size);
-  }
-  
-  function show(feed, _numEntries) {
-    numEntries = _numEntries;
-    if (!numEntries) {
-      numEntries = feed.size;
-    } else {
-      numEntries = Math.min(feed.size, numEntries);
+  // TODO: refactor once we have a proper menu structure
+  function randomiseData() {
+    sensors = [];
+    for (var i=0; i<8; i++) {
+      sensors.push(SensorData.buildRandomSensorFeed());
     }
-    showTimeseries(feed, numEntries);
-    showPlot(feed, numEntries);
-    showScrubber(feed, numEntries);
-  };
-  
-  function redraw() {
-    show(feed, numEntries);
-  }
-  
-  function showTimeseries(feed, numEntries) {
-    var canvas = document.getElementById("timeseriesCanvas");
-    var ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    var beginIdx = feed.size - numEntries;
-    var endIdx = feed.size - 1;
-    timeseriesPlot.draw(feed.x.slice(beginIdx, endIdx), 0, 0, canvas.width, 45);
-    timeseriesPlot.draw(feed.y.slice(beginIdx, endIdx), 0, 55, canvas.width, 99);
+    feed = SensorData.buildRandomSensorFeed();
+    // drawTimeseries(feed, numEntries);
+    // showArrayPlot(sensors, numEntries);
+    // showSensorPlot(feed, numEntries);
+    // showScrubber(feed, numEntries);
   }
 
-  function showPlot(feed, numEntries) {
-    var canvas = document.getElementById("plotCanvas");
-    var ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    displacementPlot.draw(feed, numEntries, highlightedEntryIdx);
+  // function drawTimeseries(feed, numEntries) {
+  //   var canvas = document.getElementById("timeseriesCanvas");
+  //   var ctx = canvas.getContext("2d");
+  //   var beginIdx = feed.size - numEntries;
+  //   var endIdx = feed.size - 1;
+  //   timeseriesPlot.draw(feed.x.slice(beginIdx, endIdx), 0, 0, canvas.width, 45);
+  //   timeseriesPlot.draw(feed.y.slice(beginIdx, endIdx), 0, 55, canvas.width, 99);
+  // }
+
+  function updateArrayPlot(sensors, numEntries) {
+    arrayPlot.setData(sensors, numEntries);
+    arrayPlot.draw();
   };
   
-  function showScrubber(feed, numEntries) {
-    var canvas = document.getElementById("scrubberCanvas");
-    var ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    scrubberPlot.draw(feed, numEntries, highlightedEntryIdx);
+  function updateSensorPlot(feed, numEntries) {
+    sensorPlot.setData(feed, numEntries);
+    sensorPlot.draw();
+    scrubberPlot.setData(feed, numEntries);
+    scrubberPlot.draw();
   };
   
-  function highlightEntry(idx) {
-    highlightedEntryIdx = Math.max(0, Math.min(feed.size-1, idx));
-    var date = feed.dates[highlightedEntryIdx];
-    var x = feed.x[highlightedEntryIdx];
-    var y = feed.y[highlightedEntryIdx];
-    var displacement = Math.sqrt(x*x + y*y);
-
-    // fake the date
-    // assuming hourly measurements, last measurement is at least 1h in the past.
-    var oneHour = 1000*60*60;
-    var oneDay = oneHour*24;
-    var numDays = (feed.size + 1) / 24; 
-    var firstDate = new Date(new Date().getTime() - numDays * oneDay);
-    var timestamp = new Date(firstDate.getTime() + idx * oneHour);
-    
-    redraw();
-    $("#scrubberInfo").html(
-      timestamp.format('yyyy-mm-dd HH:MM') + 
-      " <strong>X</strong>=" + x.toFixed(2) + 
-      " <strong>Y</strong>=" + y.toFixed(2) +
-      " <strong>magnitude</strong>=" + displacement.toFixed(2));
+  // =========
+  // = Menus =
+  // =========
+  function showHomescreen() {
+    $('#welcomePanel, #mapPanel').show();
+    $('#arrayPanel, #sensorPanel, #arrayinfoPanel, #sensorinfoPanel').hide();
   }
-  
-  function hideHighlightedEntry() {
-    highlightedEntryIdx = null;
-    redraw();
-    $("#scrubberInfo").html("&nbsp;");
-  }
-  
-  function initScrubber() {
-    var getIndex = function(e, jqNode) {
-      var x = e.pageX - jqNode.offset().left;
-      return (feed.size-numEntries) + Math.round(x * numEntries / jqNode.width());
-    };
 
-    // mouse events
-    $('#scrubberCanvas').on('mousedown', function(e) {
-      e.preventDefault();
-      $this = $(this);
-      isScrubbing = true;
-      highlightEntry(getIndex(e, $this));
-    });
-    $(window).on('mousemove', function(e) {
-      if (!isScrubbing) return;
-      highlightEntry(getIndex(e, $this));
-    });
-    $(window).on('mouseup', function(e) {
-      if (!isScrubbing) return;
-      isScrubbing = false;
-      hideHighlightedEntry();
-    });
-    
-    // touch events
-    $('#scrubberCanvas').on('touchstart', function(e) {
-      if (!e.originalEvent.changedTouches) return;
-      e.preventDefault();
-      $this = $(this);
-      isScrubbing = true;
-      highlightEntry(getIndex(e.originalEvent.changedTouches[0], $this));
-    });
-    $(window).on('touchmove', function(e) {
-      if (!e.originalEvent.changedTouches) return;
-      if (!isScrubbing) return;
-      highlightEntry(getIndex(e.originalEvent.changedTouches[0], $this));
-    });
-    $(window).on('touchend touchcancel touchleave', function(e) {
-      if (!e.originalEvent.changedTouches) return;
-      if (!isScrubbing) return;
-      isScrubbing = false;
-      hideHighlightedEntry();
-    });
+  function showArrayview(_sensors) {
+    sensors = _sensors;
+    updateArrayPlot(sensors);
+    $('#arrayPanel, #arrayinfoPanel').show();
+    $('#welcomePanel, #sensorPanel, #mapPanel, #sensorinfoPanel').hide();
+  }
+
+  function showSensorview(_feed) {
+    feed = _feed;
+    updateSensorPlot(feed);
+    $('#sensorPanel, #sensorinfoPanel').show();
+    $('#welcomePanel, #arrayPanel, #mapPanel, #arrayinfoPanel').hide();
   }
 </script>
 </head>
 <body>
 
-<div id="container">
+<div id="container" class="container-fluid">
+<div class="row-fluid">
 
-  <div id="statusbar">
-    <h1 class="left">Displacement Sensor Monitoring</h1>
+  <!-- ======== -->
+  <!-- = Menu = -->
+  <!-- ======== -->
+
+  <div id="statusBar" class="span12 lead">
+    <h1>Displacement Sensors</h1>
+    <ul class="menu">
+      <li><a href="javascript:showHomescreen()">Home</a></li>
+      <li><a href="javascript:showArrayview(sensors)">Array</a></li>
+      <li><a href="javascript:showSensorview(feed)">Sensor</a></li>
+    </ul>
     <span class="right">
-      <a href="javascript:randomiseFeedData()">Randomise</a> &middot;
-      <a href="javascript:$('#infobox').toggle();">Info</a>
+      <a href="javascript:randomiseData()">Randomise</a> &middot;
+      <a href="javascript:$('#debugPanel').toggle();">Info</a>
     </span>
+    <div style="clear: both;"></div>
   </div>
 
-  <div id="infobox">
+  <!-- ============== -->
+  <!-- = Debug Info = -->
+  <!-- ============== -->
+
+  <div id="debugPanel" class="span12">
     <h2>Sensor data history (X, Y)</h2>
     <canvas id="timeseriesCanvas" width="500" height="100"></canvas>
   </div>
 
-  <div id="visbox">
-    <canvas id="plotCanvas" width="500" height="500"></canvas>
+  <!-- ======= -->
+  <!-- = Home = -->
+  <!-- ======= -->
+
+  <div id="welcomePanel" class="span6">
+    Welcome.
+  </div>
+  
+  <div id="mapPanel" class="span6">
+    Map.
+  </div>
+  
+  <!-- ========= -->
+  <!-- = Array = -->
+  <!-- ========= -->
+
+  <div id="arrayPanel" class="span6">
+    <p>Tap a sensor below to display a more detailed history:</p>
+    <canvas id="arrayplotCanvas" width="500" height="500"></canvas>
+  </div>
+  
+  <div id="arrayinfoPanel" class="span6">
+    Array info.
+  </div>
+  
+  <!-- ======== -->
+  <!-- = Sensor -->
+  <!-- ======== -->
+
+  <div id="sensorPanel" class="span6">
+    <canvas id="sensorplotCanvas" width="400" height="400"></canvas>
     <p>
-      Show the last <a href="javascript:show(feed, 24)">day</a>, 
-      <a href="javascript:show(feed, 24*7)">week</a>, 
-      <a href="javascript:show(feed, 24*7*30)">month</a>.
+      Show the last <a href="javascript:updateSensorPlot(feed, 24)">day</a>, 
+      <a href="javascript:updateSensorPlot(feed, 24*7)">week</a>, 
+      <a href="javascript:updateSensorPlot(feed, 24*7*30)">month</a>.
     </p>
 
     <p><span id="scrubberInfo"></span>&nbsp;</p>
     <p>Tap and drag below to select a measurement within the period:</p>
     <canvas id="scrubberCanvas" width="500" height="100"></canvas>
   </div>
+
+  <div id="sensorinfoPanel" class="span6">
+    Sensor info.
+  </div>
   
+</div>
 </div>
 
 </body>
