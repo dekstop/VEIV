@@ -15,7 +15,6 @@
   <script src="js/ext/date.format.js" type="text/javascript" charset="utf-8"></script>
 
   <script src="js/SensorData.js" type="text/javascript" charset="utf-8"></script>
-  <script src="js/TimeseriesPlot.js" type="text/javascript" charset="utf-8"></script>
   <script src="js/DisplacementPlot.js" type="text/javascript" charset="utf-8"></script>
   <script src="js/ArrayPlot.js" type="text/javascript" charset="utf-8"></script>
   <script src="js/ScrubberPlot.js" type="text/javascript" charset="utf-8"></script>
@@ -82,7 +81,6 @@
   
   // plots
   var palette;
-  var timeseriesPlot;
   var arrayPlot;
   var sensorPlot;
   var scrubberPlot;
@@ -96,18 +94,20 @@
 
   // prepare widgets
   $(document).ready(function() {
+    showLoading();
+
     palette = new Palette(sensorOptions);
-    timeseriesPlot = new TimeseriesPlot($("#timeseriesCanvas")[0]);
     arrayPlot = new ArrayPlot($("#arrayplotCanvas")[0], palette, arrayOptions);
     sensorPlot = new DisplacementPlot($("#sensorplotCanvas")[0], palette, sensorOptions);
     scrubberPlot = new ScrubberPlot($("#scrubberCanvas")[0], sensorPlot, $("#scrubberInfo")[0], palette, sensorOptions);
-
+    
     // initialise the app once all data has been loaded
     $(document).ajaxStop(function() {
 
       // prepare data
       randomiseData();
-      showArrayview(sensors);
+      // showArrayview(sensors);
+      showHomescreen();
 
       // event handlers
       arrayPlot.initEventHooks();
@@ -126,20 +126,7 @@
       sensors.push(SensorData.buildRandomSensorFeed());
     }
     feed = SensorData.buildRandomSensorFeed();
-    // drawTimeseries(feed, numEntries);
-    // showArrayPlot(sensors, numEntries);
-    // showSensorPlot(feed, numEntries);
-    // showScrubber(feed, numEntries);
   }
-
-  // function drawTimeseries(feed, numEntries) {
-  //   var canvas = document.getElementById("timeseriesCanvas");
-  //   var ctx = canvas.getContext("2d");
-  //   var beginIdx = feed.size - numEntries;
-  //   var endIdx = feed.size - 1;
-  //   timeseriesPlot.draw(feed.x.slice(beginIdx, endIdx), 0, 0, canvas.width, 45);
-  //   timeseriesPlot.draw(feed.y.slice(beginIdx, endIdx), 0, 55, canvas.width, 99);
-  // }
 
   function updateArrayPlot(sensors, numEntries) {
     arrayPlot.setData(sensors, numEntries);
@@ -156,23 +143,29 @@
   // =========
   // = Menus =
   // =========
+
+  function showLoading() {
+    $('#loadingPanel').show();
+    $('#welcomePanel, #arrayPanel, #sensorPanel, #mapPanel, #arrayinfoPanel, #sensorinfoPanel').hide();
+  }
+
   function showHomescreen() {
     $('#welcomePanel, #mapPanel').show();
-    $('#arrayPanel, #sensorPanel, #arrayinfoPanel, #sensorinfoPanel').hide();
+    $('#loadingPanel, #arrayPanel, #sensorPanel, #arrayinfoPanel, #sensorinfoPanel').hide();
   }
 
   function showArrayview(_sensors) {
     sensors = _sensors;
     updateArrayPlot(sensors);
     $('#arrayPanel, #arrayinfoPanel').show();
-    $('#welcomePanel, #sensorPanel, #mapPanel, #sensorinfoPanel').hide();
+    $('#loadingPanel, #welcomePanel, #sensorPanel, #mapPanel, #sensorinfoPanel').hide();
   }
 
   function showSensorview(_feed) {
     feed = _feed;
     updateSensorPlot(feed);
     $('#sensorPanel, #sensorinfoPanel').show();
-    $('#welcomePanel, #arrayPanel, #mapPanel, #arrayinfoPanel').hide();
+    $('#loadingPanel, #welcomePanel, #arrayPanel, #mapPanel, #arrayinfoPanel').hide();
   }
 </script>
 </head>
@@ -204,10 +197,18 @@
   <!-- ============== -->
 
   <div id="debugPanel" class="span12">
-    <h2>Sensor data history (X, Y)</h2>
-    <canvas id="timeseriesCanvas" width="500" height="100"></canvas>
+    Debug info.
   </div>
+  
+  <!-- =========== -->
+  <!-- = Loading = -->
+  <!-- =========== -->
 
+  <div id="loadingPanel" class="span12">
+    <img src="img/spinner.gif" width="16" height="16" alt="Loading...">
+    Loading application... this may take a few seconds.
+  </div>
+  
   <!-- ======= -->
   <!-- = Home = -->
   <!-- ======= -->
@@ -217,7 +218,7 @@
   </div>
   
   <div id="mapPanel" class="span6">
-    Map.
+    <canvas id="mapCanvas" width="500" height="700"></canvas>
   </div>
   
   <!-- ========= -->

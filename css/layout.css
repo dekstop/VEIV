@@ -7,23 +7,8 @@
 	position: relative;
 }
 
-#welcomePanel, #arrayPanel, #sensorPanel {
-}
-
+#welcomePanel, #arrayPanel, #sensorPanel, 
 #mapPanel, #arrayinfoPanel, #sensorinfoPanel {
-}
-
-#welcomePanel, 
-/*#arrayPanel, */
-#sensorPanel 
-{
-  display: none;
-}
-
-#mapPanel, 
-/*#arrayinfoPanel, */
-#sensorinfoPanel 
-{
   display: none;
 }
 
