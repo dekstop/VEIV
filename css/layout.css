@@ -72,6 +72,13 @@
 #mapPanel {
 }
 
+#mapSvg {
+}
+#mapCanvas {
+/*  position:absolute;*/
+  z-index:2000;
+}
+
 /*
   Array view.
 */

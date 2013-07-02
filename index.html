@@ -15,6 +15,7 @@
   <script src="js/ext/date.format.js" type="text/javascript" charset="utf-8"></script>
 
   <script src="js/SensorData.js" type="text/javascript" charset="utf-8"></script>
+  <script src="js/MapPlot.js" type="text/javascript" charset="utf-8"></script>
   <script src="js/DisplacementPlot.js" type="text/javascript" charset="utf-8"></script>
   <script src="js/ArrayPlot.js" type="text/javascript" charset="utf-8"></script>
   <script src="js/ScrubberPlot.js" type="text/javascript" charset="utf-8"></script>
@@ -46,7 +47,7 @@
   // ============
   // = Settings =
   // ============
-
+  
   var sensorOptions = {
     // max expected sensor range
     range: 20.0,
@@ -71,16 +72,25 @@
     sensorOptions: sensorOptions
   };
   
+  var mapOptions = {
+    mapSvgFile: 'map/map.svg',
+    // mapImageFile: 'map/map.png',
+    
+    sensorOptions: sensorOptions,
+  };
+
   // ========
   // = Init =
   // ========
 
   // data
-  var sensors = null;
+  var sensorArrays = null;
+  var feeds = null;
   var feed = null;
   
   // plots
   var palette;
+  var mapPlot;
   var arrayPlot;
   var sensorPlot;
   var scrubberPlot;
@@ -94,24 +104,34 @@
 
   // prepare widgets
   $(document).ready(function() {
-    showLoading();
-
+    showLoadingsceen();
+    
     palette = new Palette(sensorOptions);
+    mapPlot = new MapPlot($("#mapSvg")[0], $("#mapCanvas")[0], palette, mapOptions);
     arrayPlot = new ArrayPlot($("#arrayplotCanvas")[0], palette, arrayOptions);
     sensorPlot = new DisplacementPlot($("#sensorplotCanvas")[0], palette, sensorOptions);
     scrubberPlot = new ScrubberPlot($("#scrubberCanvas")[0], sensorPlot, $("#scrubberInfo")[0], palette, sensorOptions);
     
     // initialise the app once all data has been loaded
-    $(document).ajaxStop(function() {
+    // var hasLoaded = false;
+    $(document).one('ajaxStop', function() {
+      // if (hasLoaded) return; // Guard: only run this once
+      // hasLoaded = true;
 
-      // prepare data
+      // data
       randomiseData();
-      // showArrayview(sensors);
-      showHomescreen();
 
       // event handlers
+      mapPlot.initEventHooks();
       arrayPlot.initEventHooks();
       scrubberPlot.initEventHooks();
+
+      // show welcome screen
+      // showArrayview(feeds);
+      showHomescreen(sensorArrays);
+
+      // layouts
+      mapPlot.initLayout();
     });
   });
   
@@ -121,49 +141,57 @@
 
   // TODO: refactor once we have a proper menu structure
   function randomiseData() {
-    sensors = [];
-    for (var i=0; i<8; i++) {
-      sensors.push(SensorData.buildRandomSensorFeed());
-    }
-    feed = SensorData.buildRandomSensorFeed();
-  }
 
-  function updateArrayPlot(sensors, numEntries) {
-    arrayPlot.setData(sensors, numEntries);
-    arrayPlot.draw();
-  };
-  
-  function updateSensorPlot(feed, numEntries) {
-    sensorPlot.setData(feed, numEntries);
-    sensorPlot.draw();
-    scrubberPlot.setData(feed, numEntries);
-    scrubberPlot.draw();
-  };
+    sensorArrays = [];
+    for (var i=1; i<=11; i++) {
+      var arrayId = 'array' + (i<10 ? '0' : '') + i;
+      var arrayFeeds = [];
+      for (var j=0; j<7; j++) {
+        arrayFeeds.push(SensorData.buildRandomSensorFeed());
+      }
+      sensorArrays.push({
+        name: arrayId,
+        feeds: arrayFeeds,
+      });
+    }
+    // 
+    // for (var i=0; i<7; i++) {
+    //   feeds.push(SensorData.buildRandomSensorFeed());
+    // }
+    // feed = SensorData.buildRandomSensorFeed();
+  }
   
   // =========
   // = Menus =
   // =========
 
-  function showLoading() {
+  function showLoadingsceen() {
     $('#loadingPanel').show();
     $('#welcomePanel, #arrayPanel, #sensorPanel, #mapPanel, #arrayinfoPanel, #sensorinfoPanel').hide();
   }
 
-  function showHomescreen() {
+  function showHomescreen(_sensorArrays) {
+    sensorArrays = _sensorArrays;
+    mapPlot.setData(sensorArrays);
+    mapPlot.draw();
     $('#welcomePanel, #mapPanel').show();
     $('#loadingPanel, #arrayPanel, #sensorPanel, #arrayinfoPanel, #sensorinfoPanel').hide();
   }
 
-  function showArrayview(_sensors) {
-    sensors = _sensors;
-    updateArrayPlot(sensors);
+  function showArrayview(_feeds) {
+    feeds = _feeds;
+    arrayPlot.setData(feeds);
+    arrayPlot.draw();
     $('#arrayPanel, #arrayinfoPanel').show();
     $('#loadingPanel, #welcomePanel, #sensorPanel, #mapPanel, #sensorinfoPanel').hide();
   }
 
   function showSensorview(_feed) {
     feed = _feed;
-    updateSensorPlot(feed);
+    sensorPlot.setData(feed);
+    sensorPlot.draw();
+    scrubberPlot.setData(feed);
+    scrubberPlot.draw();
     $('#sensorPanel, #sensorinfoPanel').show();
     $('#loadingPanel, #welcomePanel, #arrayPanel, #mapPanel, #arrayinfoPanel').hide();
   }
@@ -181,8 +209,8 @@
   <div id="statusBar" class="span12 lead">
     <h1>Displacement Sensors</h1>
     <ul class="menu">
-      <li><a href="javascript:showHomescreen()">Home</a></li>
-      <li><a href="javascript:showArrayview(sensors)">Array</a></li>
+      <li><a href="javascript:showHomescreen(sensorArrays)">Home</a></li>
+      <li><a href="javascript:showArrayview(feeds)">Array</a></li>
       <li><a href="javascript:showSensorview(feed)">Sensor</a></li>
     </ul>
     <span class="right">
@@ -218,7 +246,9 @@
   </div>
   
   <div id="mapPanel" class="span6">
-    <canvas id="mapCanvas" width="500" height="700"></canvas>
+    <div id="mapSvg"></div>
+    <!-- <object id="mapSvg" data="map/map.svg" type="image/svg+xml" width="600" height="700"></object> -->
+    <canvas id="mapCanvas" width="600" height="700"></canvas>
   </div>
   
   <!-- ========= -->
