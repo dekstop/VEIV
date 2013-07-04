@@ -59,11 +59,9 @@ MapPlot.prototype.drawSensors = function() {
     var svgGroup = $('#' + sensorArray.name, this.svgRoot)[0];
     var svgSensors = $("path", svgGroup);
     for (var j=0; j<svgSensors.length; j++) {
-      // console.log($(svgSensors[j]));
       var sensorRect = svgSensors[j].getBoundingClientRect();
-      // var sensorBBox = svgSensors[j].getBBox();
-      var x = sensorRect.left - mapPos.left + (sensorRect.width / 2);
-      var y = sensorRect.top - mapPos.top + (sensorRect.height / 2);
+      var x = sensorRect.left - mapPos.left + window.scrollX + (sensorRect.width / 2);
+      var y = sensorRect.top - mapPos.top + window.scrollY + (sensorRect.height / 2);
       this.ctx.beginPath();
       this.ctx.arc(x, y, 10, 0, 2*Math.PI);
       this.ctx.fillStyle = 'rgba(0,255,255,0.5)'; 

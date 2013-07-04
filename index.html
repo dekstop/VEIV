@@ -154,11 +154,9 @@
         feeds: arrayFeeds,
       });
     }
-    // 
-    // for (var i=0; i<7; i++) {
-    //   feeds.push(SensorData.buildRandomSensorFeed());
-    // }
-    // feed = SensorData.buildRandomSensorFeed();
+    
+    feeds = sensorArrays[0].feeds;
+    feed = feeds[0];
   }
   
   // =========
@@ -171,29 +169,29 @@
   }
 
   function showHomescreen(_sensorArrays) {
+    $('#welcomePanel, #mapPanel').show();
+    $('#loadingPanel, #arrayPanel, #sensorPanel, #arrayinfoPanel, #sensorinfoPanel').hide();
     sensorArrays = _sensorArrays;
     mapPlot.setData(sensorArrays);
     mapPlot.draw();
-    $('#welcomePanel, #mapPanel').show();
-    $('#loadingPanel, #arrayPanel, #sensorPanel, #arrayinfoPanel, #sensorinfoPanel').hide();
   }
 
   function showArrayview(_feeds) {
+    $('#arrayPanel, #arrayinfoPanel').show();
+    $('#loadingPanel, #welcomePanel, #sensorPanel, #mapPanel, #sensorinfoPanel').hide();
     feeds = _feeds;
     arrayPlot.setData(feeds);
     arrayPlot.draw();
-    $('#arrayPanel, #arrayinfoPanel').show();
-    $('#loadingPanel, #welcomePanel, #sensorPanel, #mapPanel, #sensorinfoPanel').hide();
   }
 
   function showSensorview(_feed) {
+    $('#sensorPanel, #sensorinfoPanel').show();
+    $('#loadingPanel, #welcomePanel, #arrayPanel, #mapPanel, #arrayinfoPanel').hide();
     feed = _feed;
     sensorPlot.setData(feed);
     sensorPlot.draw();
     scrubberPlot.setData(feed);
     scrubberPlot.draw();
-    $('#sensorPanel, #sensorinfoPanel').show();
-    $('#loadingPanel, #welcomePanel, #arrayPanel, #mapPanel, #arrayinfoPanel').hide();
   }
 </script>
 </head>
@@ -214,7 +212,6 @@
       <li><a href="javascript:showSensorview(feed)">Sensor</a></li>
     </ul>
     <span class="right">
-      <a href="javascript:randomiseData()">Randomise</a> &middot;
       <a href="javascript:$('#debugPanel').toggle();">Info</a>
     </span>
     <div style="clear: both;"></div>
@@ -226,6 +223,11 @@
 
   <div id="debugPanel" class="span12">
     Debug info.
+    <h2>Tools</h2>
+    <ul>
+      <li><a href="javascript:randomiseData()">Randomise Data</a></li>
+    </ul>
+
   </div>
   
   <!-- =========== -->
