@@ -73,7 +73,7 @@
   };
   
   var mapOptions = {
-    mapSvgFile: 'map/map.svg',
+    mapSvgFile: 'map/map-tagged.svg',
     // mapImageFile: 'map/map.png',
     
     sensorOptions: sensorOptions,
@@ -85,7 +85,7 @@
 
   // data
   var sensorArrays = null;
-  var feeds = null;
+  var sensorArray = null;
   var feed = null;
   
   // plots
@@ -127,7 +127,7 @@
       scrubberPlot.initEventHooks();
 
       // show welcome screen
-      // showArrayview(feeds);
+      // showArrayview(sensorArray);
       showHomescreen(sensorArrays);
 
       // layouts
@@ -146,8 +146,10 @@
     for (var i=1; i<=11; i++) {
       var arrayId = 'array' + (i<10 ? '0' : '') + i;
       var arrayFeeds = [];
-      for (var j=0; j<7; j++) {
-        arrayFeeds.push(SensorData.buildRandomSensorFeed());
+      for (var j=1; j<8; j++) {
+        var sensorFeed = SensorData.buildRandomSensorFeed();
+        sensorFeed.name = arrayId + '-sensor' + (j<10 ? '0' : '') + j;
+        arrayFeeds.push(sensorFeed);
       }
       sensorArrays.push({
         name: arrayId,
@@ -155,8 +157,8 @@
       });
     }
     
-    feeds = sensorArrays[0].feeds;
-    feed = feeds[0];
+    sensorArray = sensorArrays[0];
+    feed = sensorArray.feeds[0];
   }
   
   // =========
@@ -165,28 +167,28 @@
 
   function showLoadingsceen() {
     $('#loadingPanel').show();
-    $('#welcomePanel, #arrayPanel, #sensorPanel, #mapPanel, #arrayinfoPanel, #sensorinfoPanel').hide();
+    $('#welcomePanel, #arrayPanel, #sensorPanel, #mapPanel, #sensorinfoPanel').hide();
   }
 
   function showHomescreen(_sensorArrays) {
     $('#welcomePanel, #mapPanel').show();
-    $('#loadingPanel, #arrayPanel, #sensorPanel, #arrayinfoPanel, #sensorinfoPanel').hide();
+    $('#loadingPanel, #arrayPanel, #sensorPanel, #sensorinfoPanel').hide();
     sensorArrays = _sensorArrays;
     mapPlot.setData(sensorArrays);
     mapPlot.draw();
   }
 
-  function showArrayview(_feeds) {
-    $('#arrayPanel, #arrayinfoPanel').show();
-    $('#loadingPanel, #welcomePanel, #sensorPanel, #mapPanel, #sensorinfoPanel').hide();
-    feeds = _feeds;
-    arrayPlot.setData(feeds);
+  function showArrayview(_sensorArray) {
+    $('#arrayPanel, #mapPanel').show();
+    $('#loadingPanel, #welcomePanel, #sensorPanel, #sensorinfoPanel').hide();
+    sensorArray = _sensorArray;
+    arrayPlot.setData(sensorArray.feeds);
     arrayPlot.draw();
   }
 
   function showSensorview(_feed) {
     $('#sensorPanel, #sensorinfoPanel').show();
-    $('#loadingPanel, #welcomePanel, #arrayPanel, #mapPanel, #arrayinfoPanel').hide();
+    $('#loadingPanel, #welcomePanel, #arrayPanel, #mapPanel').hide();
     feed = _feed;
     sensorPlot.setData(feed);
     sensorPlot.draw();
@@ -208,7 +210,7 @@
     <h1>Displacement Sensors</h1>
     <ul class="menu">
       <li><a href="javascript:showHomescreen(sensorArrays)">Home</a></li>
-      <li><a href="javascript:showArrayview(feeds)">Array</a></li>
+      <li><a href="javascript:showArrayview(sensorArray)">Array</a></li>
       <li><a href="javascript:showSensorview(feed)">Sensor</a></li>
     </ul>
     <span class="right">
@@ -247,23 +249,15 @@
     Welcome.
   </div>
   
-  <div id="mapPanel" class="span6">
-    <div id="mapSvg"></div>
-    <!-- <object id="mapSvg" data="map/map.svg" type="image/svg+xml" width="600" height="700"></object> -->
-    <canvas id="mapCanvas" width="600" height="700"></canvas>
-  </div>
-  
-  <!-- ========= -->
-  <!-- = Array = -->
-  <!-- ========= -->
-
   <div id="arrayPanel" class="span6">
     <p>Tap a sensor below to display a more detailed history:</p>
     <canvas id="arrayplotCanvas" width="500" height="500"></canvas>
   </div>
   
-  <div id="arrayinfoPanel" class="span6">
-    Array info.
+  <div id="mapPanel" class="span6">
+    <div id="mapSvg"></div>
+    <!-- <object id="mapSvg" data="map/map.svg" type="image/svg+xml" width="600" height="700"></object> -->
+    <canvas id="mapCanvas" width="600" height="700"></canvas>
   </div>
   
   <!-- ======== -->

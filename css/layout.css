@@ -8,7 +8,7 @@
 }
 
 #welcomePanel, #arrayPanel, #sensorPanel, 
-#mapPanel, #arrayinfoPanel, #sensorinfoPanel {
+#mapPanel, #sensorinfoPanel {
   display: none;
 }
 
@@ -63,10 +63,13 @@
 }
 
 /*
-  Welcome screen and map view.
+  Welcome screen and map/array views.
 */
 
 #welcomePanel {
+}
+
+#arrayPanel {
 }
 
 #mapPanel {
@@ -77,16 +80,6 @@
 #mapCanvas {
 /*  position:absolute;*/
   z-index:2000;
-}
-
-/*
-  Array view.
-*/
-
-#arrayPanel {
-}
-
-#arrayinfoPanel {
 }
 
 /*

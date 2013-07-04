@@ -17,13 +17,14 @@ function MapPlot(svgObj, canvas, palette, options) {
   this.palette = jQuery.extend({}, palette);
   this.options = jQuery.extend({}, options);
 
-  this.sensorArrays = null;
+  this.sensorArrayData = null;
+  this.mapPositions = null;
 }
 
-// sensorArrays: a list of sensor array records
+// sensorArrayData: a list of sensor array records
 // [ { name: <svg_id>, feeds: <list> }, ...]
-MapPlot.prototype.setData = function(sensorArrays) {
-  this.sensorArrays = sensorArrays;
+MapPlot.prototype.setData = function(sensorArrayData) {
+  this.sensorArrayData = sensorArrayData;
 }
 
 // Call when DOM is ready
@@ -41,8 +42,61 @@ MapPlot.prototype.initLayout = function() {
   $.get(this.options.mapSvgFile, {}, function(res) {
     $(mapPlot.svgObj).html(res);
     mapPlot.svgRoot = $(mapPlot.svgObj).children()[0];
+    mapPlot._updateSensorArrayLayout();
     mapPlot.draw();
   }, "text");
+};
+
+// Called by initLayout once the map SVG is loaded.
+MapPlot.prototype._updateSensorArrayLayout = function() {
+
+  // TODO: is "this" now a MapPlot object, or a "res" from caller?
+  if (this.svgRoot==null) return;
+  var sensorArrayPositions = {}; // array_id -> {x1,y1,x2,y2}
+  var sensorPositions = {}; // array_id -> sensor_id -> {x1,y1,radius}
+  var mapOrigin = $(this.svgObj).position(); // screen position of map SVG
+
+  // for every sensor array in our data
+  for (var i=0; i<this.sensorArrayData.length; i++) {
+    var sensorArray = this.sensorArrayData[i]; 
+    var svgGroup = $('#' + sensorArray.name, this.svgRoot)[0]; // find it on map
+    sensorArrayPositions[sensorArray.name] = this._getMapBounds(svgGroup, mapOrigin);
+    sensorPositions[sensorArray.name] = {};
+
+    // for every sensor in this array
+    for (var j=0; j<sensorArray.feeds.length; j++) {
+      var feed = sensorArray.feeds[j];
+      var svgSensor = $('#' + feed.name, this.svgRoot)[0]; // find it on map
+      sensorPositions[feed.name] = this._getMapPoint(svgSensor, mapOrigin);
+    }
+  }
+  this.mapPositions = {
+    sensorArrays: sensorArrayPositions,
+    sensors: sensorPositions,
+  };
+};
+
+// Translate the screen position of an SVG object into canvas map coordinates.
+// Accounts for scrolling offset.
+MapPlot.prototype._getMapPoint = function(svgObject, mapOrigin) {
+  var rect = svgObject.getBoundingClientRect();
+  return {
+    x: rect.left - mapOrigin.left + window.scrollX + (rect.width / 2),
+    y: rect.top - mapOrigin.top + window.scrollY + (rect.height / 2),
+    radius: Math.max(rect.width, rect.height) / 2,
+  };
+};
+
+// Translate the screen bounds of an SVG object into canvas map coordinates.
+// Accounts for scrolling offset.
+MapPlot.prototype._getMapBounds = function(svgObject, mapOrigin) {
+  var rect = svgObject.getBoundingClientRect();
+  return {
+    x1: rect.left - mapOrigin.left + window.scrollX,
+    y1: rect.top - mapOrigin.top + window.scrollY,
+    x2: rect.left - mapOrigin.left + window.scrollX + rect.width,
+    y2: rect.top - mapOrigin.top + window.scrollY + rect.height,
+  };
 };
 
 MapPlot.prototype.draw = function() {
@@ -51,78 +105,64 @@ MapPlot.prototype.draw = function() {
 };
 
 MapPlot.prototype.drawSensors = function() {
-  if (this.svgRoot==null) return;
+  if (this.svgRoot==null || this.mapPositions==null) return;
+  
+  // for every sensor array in our data
+  for (var i=0; i<this.sensorArrayData.length; i++) {
+    var sensorArray = this.sensorArrayData[i]; 
+    var sensorArrayBounds = this.mapPositions.sensorArrays[sensorArray.name];
 
-  var mapPos = $(this.svgObj).position();
-  for (var i=0; i<this.sensorArrays.length; i++) {
-    var sensorArray = sensorArrays[i];
-    var svgGroup = $('#' + sensorArray.name, this.svgRoot)[0];
-    var svgSensors = $("path", svgGroup);
-    for (var j=0; j<svgSensors.length; j++) {
-      var sensorRect = svgSensors[j].getBoundingClientRect();
-      var x = sensorRect.left - mapPos.left + window.scrollX + (sensorRect.width / 2);
-      var y = sensorRect.top - mapPos.top + window.scrollY + (sensorRect.height / 2);
+    // for every sensor in this array
+    for (var j=0; j<sensorArray.feeds.length; j++) {
+      var feed = sensorArray.feeds[j];
+      var displacement = feed.getDisplacement();
+      var style = this.palette.getColour(displacement);
+      var sensorBounds = this.mapPositions.sensors[feed.name];
+
       this.ctx.beginPath();
-      this.ctx.arc(x, y, 10, 0, 2*Math.PI);
-      this.ctx.fillStyle = 'rgba(0,255,255,0.5)'; 
+      this.ctx.arc(
+        sensorBounds.x, sensorBounds.y, 
+        sensorBounds.radius + 5, 
+        0, 2*Math.PI);
+      this.ctx.fillStyle = style; 
+      // this.ctx.fillStyle = 'rgba(0,255,255,0.5)'; 
       this.ctx.fill();
     }
   }
-  // for (var i=0; i<this.feeds.length; i++) {
-  //   var angle = (this.options.sensorAngles[i] + 90) * Math.PI*2 / 360;
-  //   var x = this.x + Math.cos(angle) * (this.radius + 0);
-  //   var y = this.y + Math.sin(angle) * (this.radius + 0);
-  // 
-  //   // fill
-  //   var displacement = this.feeds[i].getDisplacement();
-  //   var style = this.palette.getColour(displacement);
-  // 
-  //   this.ctx.beginPath();
-  //   this.ctx.arc(x, y, this.options.sensorRadius, 0, 2*Math.PI);
-  //   this.ctx.fillStyle = style; 
-  //   this.ctx.lineWidth = 2;
-  //   this.ctx.fill();
-  // 
-  //   // stroke
-  //   this.ctx.beginPath();
-  //   this.ctx.arc(x, y, this.options.sensorRadius, 0, 2*Math.PI);
-  //   this.ctx.strokeStyle = "rgba(90,90,90,1)"; 
-  //   this.ctx.lineWidth = 2;
-  //   this.ctx.stroke();
-  // }
 };
 
-MapPlot.prototype.drawHighlight = function(idx) {
-  // for (var i=0; i<this.feeds.length; i++) {
-  //   var angle = (this.options.sensorAngles[i] + 90) * Math.PI*2 / 360;
-  //   this.displacementPlot.x = this.x + Math.cos(angle) * this.radius;
-  //   this.displacementPlot.y = this.y + Math.sin(angle) * this.radius;
-  //   this.displacementPlot.setData(this.feeds[i], this.numEntries);
-  //   this.displacementPlot.drawHighlight(idx);
-  // }
+MapPlot.prototype.drawHighlight = function(sensorArray) {
+  var rect = this.mapPositions.sensorArrays[sensorArray.name];
+  this.ctx.strokeStyle = 'rgba(100,200,250,0.8)';
+  this.ctx.lineWidth = 4;
+  this.ctx.beginPath();
+  this.ctx.moveTo(rect.x1 - 10, rect.y1 - 10);
+  this.ctx.lineTo(rect.x1 - 10, rect.y2 + 10);
+  this.ctx.lineTo(rect.x2 + 10, rect.y2 + 10);
+  this.ctx.lineTo(rect.x2 + 10, rect.y1 - 10);
+  this.ctx.closePath();
+  this.ctx.stroke();
 }
 
 // ==================
 // = Event Handlers =
 // ==================
 
-MapPlot.prototype._getArrayIndexAt = function(x, y) {
-  // for (var i=0; i<this.feeds.length; i++) {
-  //   var angle = (this.options.sensorAngles[i] + 90) * Math.PI*2 / 360;
-  //   var fx = this.x + Math.cos(angle) * this.radius;
-  //   var fy = this.y + Math.sin(angle) * this.radius;
-  //   var dx = fx - x;
-  //   var dy = fy - y;
-  //   var dist = Math.sqrt(dx*dx + dy*dy);
-  //   if (dist < this.options.sensorRadius * 4) {
-  //     return i;
-  //   }
-  // }
+MapPlot.prototype._getSensorArrayIndexAt = function(x, y) {
+  for (var i=0; i< this.sensorArrayData.length; i++) {
+    var sensorArray = this.sensorArrayData[i];
+    var rect = this.mapPositions.sensorArrays[sensorArray.name];
+    if (rect.x1 <= x && x <= rect.x2 && 
+      rect.y1 <= y && y <= rect.y2) {
+
+      return i;
+    }
+  }
   return null;
 };
 
-MapPlot.prototype._getIndex = function(e) {
-  return this._getArrayIndexAt(
+MapPlot.prototype._getSensorArrayIndex = function(e) {
+  return this._getSensorArrayIndexAt(
     e.pageX - $(this.canvas).offset().left,
     e.pageY - $(this.canvas).offset().top
   );
@@ -139,11 +179,11 @@ MapPlot.prototype.initEventHooks = function() {
   $(window).on('mouseup', function(e) {
   });
   $(this.canvas).on('click', function(e) {
-    var idx = mapPlot._getIndex(e);
+    var idx = mapPlot._getSensorArrayIndex(e);
     if (idx!=null) {
-      showArrayview(mapPlot.arrays[idx]);
-      // mapPlot.draw();
-      mapPlot.drawHighlight(idx);
+      showArrayview(mapPlot.sensorArrayData[idx]);
+      mapPlot.draw();
+      mapPlot.drawHighlight(mapPlot.sensorArrayData[idx]);
     }
   });
   
@@ -151,11 +191,11 @@ MapPlot.prototype.initEventHooks = function() {
   $(this.canvas).on('touchstart', function(e) {
     if (!e.originalEvent.changedTouches) return;
     e.preventDefault();
-    var idx = mapPlot._getIndex(e.originalEvent.changedTouches[0]);
+    var idx = mapPlot._getSensorArrayIndex(e.originalEvent.changedTouches[0]);
     if (idx!=null) {
-      showArrayview(mapPlot.arrays[idx]);
-      // mapPlot.draw();
-      mapPlot.drawHighlight(idx);
+      showArrayview(mapPlot.sensorArrayData[idx]);
+      mapPlot.draw();
+      mapPlot.drawHighlight(mapPlot.sensorArrayData[idx]);
     }
     // e.originalEvent.changedTouches[0]
   });
