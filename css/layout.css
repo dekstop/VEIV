@@ -1,10 +1,10 @@
 /*
-	Layout
+  Layout
 */
 
 #container {
 /*  width: 100%;*/
-	position: relative;
+  position: relative;
 }
 
 #welcomePanel, #arrayPanel, #sensorPanel, 
@@ -12,19 +12,37 @@
   display: none;
 }
 
+/*
+  Panels and overlays.
+*/
+
+.overlay {
+}
+.overlay p {
+  background: rgba(255,255,255,0.6);
+  color: #000;
+}
+
+.panel {
+  background: rgba(0,0,0,0.75)
+  color: #ccc;
+}
+.panel a {
+  color: #fff;
+}
+
 /* 
   Status bar/main menu
 */
 
 #statusBar {
-/*  width: 100%;*/
-  color: #ffffff;
   background: #336699;
-	padding-top: 0;
-	padding-right: 0.5em;
-	padding-bottom: 0;
-	padding-left: 0.5em;
+  color: #ffffff;
   margin: 0;
+  padding-top: 0;
+  padding-right: 0.5em;
+  padding-bottom: 0;
+  padding-left: 0.5em;
 }
 #statusBar a {
   color: #ffffff;
@@ -35,11 +53,11 @@
   float: left;
   font-size: 1em;
   font-weight: normal;
-	padding-top: 0;
-	padding-right: 0.5em;
-	padding-bottom: 0;
-	padding-left: 0;
   margin: 0;
+  padding-top: 0;
+  padding-right: 0.5em;
+  padding-bottom: 0;
+  padding-left: 0;
 }
 
 #statusBar ul.menu {
@@ -49,17 +67,17 @@
 #statusBar .menu li {
   display: inline;
   float: left;
-	padding-top: 0.5em;
-	padding-right: 0.5em;
-	padding-bottom: 0.5em;
-	padding-left: 0.5em;
   margin: 0;
+  padding-top: 0.5em;
+  padding-right: 0.5em;
+  padding-bottom: 0.5em;
+  padding-left: 0.5em;
 }
 
 #debugPanel {
   display: none;
-  color: #ffffff;
   background: #6699aa;
+  color: #ffffff;
 }
 
 /*
@@ -94,8 +112,19 @@
 }
 
 #scrubberInfo {
-	color: #ffffff;
+  color: #ffffff;
 }
 
 #sensorinfoPanel {
+}
+
+/*
+  Scanner view.
+*/
+
+#scannerPanel {
+}
+
+#scannerInfo {
+  font-style: italic;
 }

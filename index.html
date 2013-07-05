@@ -21,6 +21,10 @@
   <script src="js/ScrubberPlot.js" type="text/javascript" charset="utf-8"></script>
   <script src="js/Palette.js" type="text/javascript" charset="utf-8"></script>
 
+	<script src="architect://architect.js"></script>
+	<script type="text/javascript" src="js/ext/ade.js"></script>
+  <script src="js/ARController.js" type="text/javascript" charset="utf-8"></script>
+
   <style type="text/css" media="screen">
 /*    overriding bootstrap defaults*/
     body {
@@ -73,10 +77,19 @@
   };
   
   var mapOptions = {
-    mapSvgFile: 'map/map-tagged.svg',
-    // mapImageFile: 'map/map.png',
-    
+    mapSvgFile: 'map/map-tagged.svg',    
     sensorOptions: sensorOptions,
+  };
+  
+  var arOptions = {
+    trackerDataSetPath: 'markers/patterngen_large.zip',
+    trackedObjects: ['1', '2', '3', '4'],
+    overlayImageFile: 'img/sensor.png',
+    overlayImageHeight: 1,
+    onLoaded: function() { },
+    onClick: function(objectId) { $('#scannerInfo').html('Clicked: ' + objectId) },
+    onEnterFieldOfVision: function(objectId) { $('#scannerInfo').html('Found: ' + objectId) },
+    onExitFieldOfVision: function(objectId) { $('#scannerInfo').html('Searching location markers...') },
   };
 
   // ========
@@ -95,6 +108,9 @@
   var sensorPlot;
   var scrubberPlot;
   
+  // AR
+  var arController;
+  
   // load data
   SensorData.loadAjaxData([
     'data/data1.txt', 'data/data2.txt', 'data/data3.txt', 'data/data4.txt', 
@@ -112,6 +128,8 @@
     sensorPlot = new DisplacementPlot($("#sensorplotCanvas")[0], palette, sensorOptions);
     scrubberPlot = new ScrubberPlot($("#scrubberCanvas")[0], sensorPlot, $("#scrubberInfo")[0], palette, sensorOptions);
     
+    arController = new ARController(arOptions);
+    
     // initialise the app once all data has been loaded
     // var hasLoaded = false;
     $(document).one('ajaxStop', function() {
@@ -119,30 +137,36 @@
       // hasLoaded = true;
 
       // data
-      randomiseData();
+      makeData();
 
       // event handlers
       mapPlot.initEventHooks();
       arrayPlot.initEventHooks();
       scrubberPlot.initEventHooks();
 
-      // show welcome screen
+      // show application screen
       // showArrayview(sensorArray);
-      showHomescreen(sensorArrays);
+      // showHomescreen(sensorArrays);
+      showScannerview();
 
       // layouts
-      mapPlot.initLayout();
+      // mapPlot.initLayout(); // TODO: this can only be run when the map is actually displayed...
     });
   });
   
   // ================
   // = Interactions =
   // ================
-
+  
   // TODO: refactor once we have a proper menu structure
-  function randomiseData() {
+  function makeData() {
+    sensorArrays = getRandomisedSensorArrays();
+    sensorArray = sensorArrays[0];
+    feed = sensorArray.feeds[0];
+  }
 
-    sensorArrays = [];
+  function getRandomisedSensorArrays() {
+    var sensorArrays = [];
     for (var i=1; i<=11; i++) {
       var arrayId = 'array' + (i<10 ? '0' : '') + i;
       var arrayFeeds = [];
@@ -156,44 +180,77 @@
         feeds: arrayFeeds,
       });
     }
-    
-    sensorArray = sensorArrays[0];
-    feed = sensorArray.feeds[0];
+    return sensorArrays;
   }
   
   // =========
   // = Menus =
   // =========
 
+  var panels = [
+    '#loadingPanel',
+    '#welcomePanel',
+    '#arrayPanel',
+    '#sensorPanel',
+    '#mapPanel',
+    '#sensorinfoPanel',
+    '#scannerPanel',
+  ];
+  
+  function _removeEntries(_entries, _entriesToRemove) {
+    var ret = _entries.slice(); // copy
+    $.each(_entriesToRemove, function(idx, entry) {
+      var idx2 = $.inArray(entry, ret);
+      if (idx2 != -1) ret.splice(idx2 , 1);
+    });
+    return ret;
+  }
+  
+  function _showPanels(panelIds) {
+    // AR controller
+    if (arController != null) {
+      var showScanner = ($.inArray('#scannerPanel', panelIds) != -1);
+      if (showScanner) {
+        if (!arController.isTracking()) arController.startTracking();
+      } else {
+        if (arController.isTracking()) arController.stopTracking();
+      }
+    }
+
+    // Panels
+    $(panelIds.join(', ')).show();
+    $(_removeEntries(panels, panelIds).join(', ')).hide();
+  }
+  
   function showLoadingsceen() {
-    $('#loadingPanel').show();
-    $('#welcomePanel, #arrayPanel, #sensorPanel, #mapPanel, #sensorinfoPanel').hide();
+    _showPanels(['#loadingPanel']);
   }
 
   function showHomescreen(_sensorArrays) {
-    $('#welcomePanel, #mapPanel').show();
-    $('#loadingPanel, #arrayPanel, #sensorPanel, #sensorinfoPanel').hide();
+    _showPanels(['#welcomePanel', '#mapPanel']);
     sensorArrays = _sensorArrays;
     mapPlot.setData(sensorArrays);
     mapPlot.draw();
   }
 
   function showArrayview(_sensorArray) {
-    $('#arrayPanel, #mapPanel').show();
-    $('#loadingPanel, #welcomePanel, #sensorPanel, #sensorinfoPanel').hide();
+    _showPanels(['#arrayPanel', '#mapPanel']);
     sensorArray = _sensorArray;
     arrayPlot.setData(sensorArray.feeds);
     arrayPlot.draw();
   }
 
   function showSensorview(_feed) {
-    $('#sensorPanel, #sensorinfoPanel').show();
-    $('#loadingPanel, #welcomePanel, #arrayPanel, #mapPanel').hide();
+    _showPanels(['#sensorPanel', '#sensorinfoPanel']);
     feed = _feed;
     sensorPlot.setData(feed);
     sensorPlot.draw();
     scrubberPlot.setData(feed);
     scrubberPlot.draw();
+  }
+
+  function showScannerview() {
+    _showPanels(['#scannerPanel']);
   }
 </script>
 </head>
@@ -223,11 +280,11 @@
   <!-- = Debug Info = -->
   <!-- ============== -->
 
-  <div id="debugPanel" class="span12">
+  <div id="debugPanel" class="span12 panel">
     Debug info.
     <h2>Tools</h2>
     <ul>
-      <li><a href="javascript:randomiseData()">Randomise Data</a></li>
+      <li><a href="javascript:makeData()">Randomise Data</a></li>
     </ul>
 
   </div>
@@ -236,35 +293,35 @@
   <!-- = Loading = -->
   <!-- =========== -->
 
-  <div id="loadingPanel" class="span12">
-    <img src="img/spinner.gif" width="16" height="16" alt="Loading...">
-    Loading application... this may take a few seconds.
+  <div id="loadingPanel" class="span12 overlay">
+    <p><img src="img/spinner.gif" width="16" height="16" alt="Loading...">
+        Loading application... this may take a few seconds.</p>
   </div>
   
-  <!-- ======= -->
+  <!-- ======== -->
   <!-- = Home = -->
-  <!-- ======= -->
+  <!-- ======== -->
 
-  <div id="welcomePanel" class="span6">
+  <div id="welcomePanel" class="span6 panel">
     Welcome.
   </div>
   
-  <div id="arrayPanel" class="span6">
+  <div id="arrayPanel" class="span6 panel">
     <p>Tap a sensor below to display a more detailed history:</p>
     <canvas id="arrayplotCanvas" width="500" height="500"></canvas>
   </div>
   
-  <div id="mapPanel" class="span6">
+  <div id="mapPanel" class="span6 panel">
     <div id="mapSvg"></div>
     <!-- <object id="mapSvg" data="map/map.svg" type="image/svg+xml" width="600" height="700"></object> -->
     <canvas id="mapCanvas" width="600" height="700"></canvas>
   </div>
   
-  <!-- ======== -->
-  <!-- = Sensor -->
-  <!-- ======== -->
+  <!-- ========== -->
+  <!-- = Sensor = -->
+  <!-- ========== -->
 
-  <div id="sensorPanel" class="span6">
+  <div id="sensorPanel" class="span6 panel">
     <canvas id="sensorplotCanvas" width="400" height="400"></canvas>
     <p>
       Show the last <a href="javascript:updateSensorPlot(feed, 24)">day</a>, 
@@ -277,8 +334,17 @@
     <canvas id="scrubberCanvas" width="500" height="100"></canvas>
   </div>
 
-  <div id="sensorinfoPanel" class="span6">
+  <div id="sensorinfoPanel" class="span6 panel">
     Sensor info.
+  </div>
+  
+  <!-- ============ -->
+  <!-- = Scanning = -->
+  <!-- ============ -->
+
+  <div id="scannerPanel" class="span12 overlay">
+    <p>Scan a nearby location marker with your camera. Tap to display sensor data for this location.</p>
+    <p><span id="scannerInfo"></span>&nbsp;</p>
   </div>
   
 </div>

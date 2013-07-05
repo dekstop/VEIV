@@ -151,7 +151,7 @@ ScrubberPlot.prototype.initEventHooks = function() {
   $(window).on('mouseup', function(e) {
     if (!scrubberPlot.isScrubbing) return;
     scrubberPlot.isScrubbing = false;
-    scrubberPlot._hideHighlightedEntry();
+    // scrubberPlot._hideHighlightedEntry();
   });
   
   // touch events
@@ -170,6 +170,6 @@ ScrubberPlot.prototype.initEventHooks = function() {
     if (!e.originalEvent.changedTouches) return;
     if (!scrubberPlot.isScrubbing) return;
     scrubberPlot.isScrubbing = false;
-    scrubberPlot._hideHighlightedEntry();
+    // scrubberPlot._hideHighlightedEntry();
   });
 };

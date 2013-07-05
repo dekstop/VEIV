@@ -83,7 +83,7 @@ MapPlot.prototype._getMapPoint = function(svgObject, mapOrigin) {
   return {
     x: rect.left - mapOrigin.left + window.scrollX + (rect.width / 2),
     y: rect.top - mapOrigin.top + window.scrollY + (rect.height / 2),
-    radius: Math.max(rect.width, rect.height) / 2,
+    radius: Math.max(rect.width, rect.height) / 2 + 5,
   };
 };
 
@@ -92,10 +92,10 @@ MapPlot.prototype._getMapPoint = function(svgObject, mapOrigin) {
 MapPlot.prototype._getMapBounds = function(svgObject, mapOrigin) {
   var rect = svgObject.getBoundingClientRect();
   return {
-    x1: rect.left - mapOrigin.left + window.scrollX,
-    y1: rect.top - mapOrigin.top + window.scrollY,
-    x2: rect.left - mapOrigin.left + window.scrollX + rect.width,
-    y2: rect.top - mapOrigin.top + window.scrollY + rect.height,
+    x1: rect.left - mapOrigin.left + window.scrollX - 10,
+    y1: rect.top - mapOrigin.top + window.scrollY - 10,
+    x2: rect.left - mapOrigin.left + window.scrollX + rect.width + 10,
+    y2: rect.top - mapOrigin.top + window.scrollY + rect.height + 10,
   };
 };
 
@@ -122,7 +122,7 @@ MapPlot.prototype.drawSensors = function() {
       this.ctx.beginPath();
       this.ctx.arc(
         sensorBounds.x, sensorBounds.y, 
-        sensorBounds.radius + 5, 
+        sensorBounds.radius, 
         0, 2*Math.PI);
       this.ctx.fillStyle = style; 
       // this.ctx.fillStyle = 'rgba(0,255,255,0.5)'; 
@@ -136,10 +136,10 @@ MapPlot.prototype.drawHighlight = function(sensorArray) {
   this.ctx.strokeStyle = 'rgba(100,200,250,0.8)';
   this.ctx.lineWidth = 4;
   this.ctx.beginPath();
-  this.ctx.moveTo(rect.x1 - 10, rect.y1 - 10);
-  this.ctx.lineTo(rect.x1 - 10, rect.y2 + 10);
-  this.ctx.lineTo(rect.x2 + 10, rect.y2 + 10);
-  this.ctx.lineTo(rect.x2 + 10, rect.y1 - 10);
+  this.ctx.moveTo(rect.x1, rect.y1);
+  this.ctx.lineTo(rect.x1, rect.y2);
+  this.ctx.lineTo(rect.x2, rect.y2);
+  this.ctx.lineTo(rect.x2, rect.y1);
   this.ctx.closePath();
   this.ctx.stroke();
 }
