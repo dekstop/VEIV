@@ -1,28 +1,35 @@
 // Construct timestamped x/y sensor data feeds from sensor test data files.
 // Requires jQuery.
 
-var SensorData = {
+var SensorDataGenerator = {
   
   sensors: [],
 
   // This is asynchronous. To get notified when loading finished:
-  // listen to the ajax stop event, $(document).ajaxStop(function() { ... }
+  // listen to the ajax stop event, $(document).one('ajaxStop', function() { ... }
   loadAjaxData: function(dataFiles) {
     for (var i=0; i<dataFiles.length; i++) {
       $.get(dataFiles[i], function(data) {
-        SensorData.sensors.push(SensorData._parseData(data));
+        SensorDataGenerator.sensors.push(SensorDataGenerator._parseData(data));
       }, 'text');
     }
   },
 
   // Returns an object: { name, size, dates=[...], x=[...], y=[...] }
   // That object also has a few utility functions.
-  buildRandomSensorFeed: function() {
-    var sensorX = SensorData.sensors[Math.floor(Math.random() * SensorData.sensors.length)];
-    var sensorY = SensorData._getValues(SensorData.sensors[Math.floor(Math.random() * SensorData.sensors.length)]);
-    var _dates = SensorData._getKeys(sensorX);
-    var _x = SensorData._getValues(sensorX);
-    var _y = SensorData._getValues(sensorY);
+  buildFeed: function() {
+    var sensorX = SensorDataGenerator.sensors[
+      Math.floor(Math.random() * 
+      SensorDataGenerator.sensors.length)
+    ];
+    var sensorY = SensorDataGenerator._getValues(
+        SensorDataGenerator.sensors[
+          Math.floor(Math.random() * 
+          SensorDataGenerator.sensors.length)
+        ]);
+    var _dates = SensorDataGenerator._getKeys(sensorX);
+    var _x = SensorDataGenerator._getValues(sensorX);
+    var _y = SensorDataGenerator._getValues(sensorY);
     return {
       name: ("Sensor " + Math.floor((Math.random()*1000)+1)),
       size: Math.min(_x.length, _y.length),

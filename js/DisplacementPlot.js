@@ -40,9 +40,9 @@ DisplacementPlot.prototype.setData = function(feed, numEntries) {
     this.drawThresholds();
   } 
   this.drawPlotDots();
-  if (!this.options.simplified) {
+  // if (!this.options.simplified) {
     this.drawPlotPath();
-  }
+  // }
 }
 
 DisplacementPlot.prototype.draw = function() {

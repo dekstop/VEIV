@@ -14,7 +14,9 @@
   <script src="js/ext/bootstrap.min.js" type="text/javascript" charset="utf-8"></script>
   <script src="js/ext/date.format.js" type="text/javascript" charset="utf-8"></script>
 
-  <script src="js/SensorData.js" type="text/javascript" charset="utf-8"></script>
+  <script src="js/SensorDataLoader.js" type="text/javascript" charset="utf-8"></script>
+  <script src="js/SensorDataGenerator.js" type="text/javascript" charset="utf-8"></script>
+
   <script src="js/MapPlot.js" type="text/javascript" charset="utf-8"></script>
   <script src="js/DisplacementPlot.js" type="text/javascript" charset="utf-8"></script>
   <script src="js/ArrayPlot.js" type="text/javascript" charset="utf-8"></script>
@@ -73,6 +75,7 @@
   var arrayOptions = {
     sensorAngles: [45, 90, 135, 180, 225, 270, 315],
     sensorRadius: 10,
+    plotRadius: 40,
     sensorOptions: sensorOptions
   };
   
@@ -112,11 +115,25 @@
   var arController;
   
   // load data
-  SensorData.loadAjaxData([
-    'data/data1.txt', 'data/data2.txt', 'data/data3.txt', 'data/data4.txt', 
-    'data/data5.txt', 'data/data6.txt', 'data/data7.txt', 'data/data8.txt', 
-    'data/data9.txt', 'data/data10.txt', 'data/data11.txt', 'data/data12.txt', 
-  ]);
+  SensorDataLoader.loadAjaxData({
+    'array01': 'data/demo01/array01.txt', 
+    'array02': 'data/demo01/array01.txt', 
+    'array03': 'data/demo01/array01.txt', 
+    'array04': 'data/demo01/array01.txt', 
+    'array05': 'data/demo01/array01.txt', 
+    'array06': 'data/demo01/array02.txt', 
+    'array07': 'data/demo01/array03.txt', 
+    'array08': 'data/demo01/array04.txt', 
+    'array09': 'data/demo01/array05.txt', 
+    'array10': 'data/demo01/array01.txt', 
+    'array11': 'data/demo01/array01.txt', 
+  });
+
+  // SensorDataGenerator.loadAjaxData([
+  //   'data/old/data1.txt', 'data/old/data2.txt', 'data/old/data3.txt', 'data/old/data4.txt', 
+  //   'data/old/data5.txt', 'data/old/data6.txt', 'data/old/data7.txt', 'data/old/data8.txt', 
+  //   'data/old/data9.txt', 'data/old/data10.txt', 'data/old/data11.txt', 'data/old/data12.txt', 
+  // ]);
 
   // prepare widgets
   $(document).ready(function() {
@@ -146,11 +163,11 @@
 
       // show application screen
       // showArrayview(sensorArray);
-      // showHomescreen(sensorArrays);
-      showScannerview();
+      showHomescreen(sensorArrays);
+      // showScannerview();
 
       // layouts
-      // mapPlot.initLayout(); // TODO: this can only be run when the map is actually displayed...
+      mapPlot.initLayout(); // TODO: this can only be run when the map is actually displayed...
     });
   });
   
@@ -160,42 +177,63 @@
   
   // TODO: refactor once we have a proper menu structure
   function makeData() {
-    sensorArrays = getRandomisedSensorArrays();
+    // sensorArrays = getRandomisedSensorArrays();
+    sensorArrays = SensorDataLoader.getData();
     sensorArray = sensorArrays[0];
     feed = sensorArray.feeds[0];
   }
 
-  function getRandomisedSensorArrays() {
-    var sensorArrays = [];
-    for (var i=1; i<=11; i++) {
-      var arrayId = 'array' + (i<10 ? '0' : '') + i;
-      var arrayFeeds = [];
-      for (var j=1; j<8; j++) {
-        var sensorFeed = SensorData.buildRandomSensorFeed();
-        sensorFeed.name = arrayId + '-sensor' + (j<10 ? '0' : '') + j;
-        arrayFeeds.push(sensorFeed);
-      }
-      sensorArrays.push({
-        name: arrayId,
-        feeds: arrayFeeds,
-      });
-    }
-    return sensorArrays;
-  }
+  // function getRandomisedSensorArrays() {
+  //   var sensorArrays = [];
+  //   for (var i=1; i<=11; i++) {
+  //     var arrayId = 'array' + (i<10 ? '0' : '') + i;
+  //     var arrayFeeds = [];
+  //     for (var j=1; j<8; j++) {
+  //       var sensorFeed = SensorDataGenerator.buildFeed();
+  //       sensorFeed.name = arrayId + '-sensor' + (j<10 ? '0' : '') + j;
+  //       arrayFeeds.push(sensorFeed);
+  //     }
+  //     sensorArrays.push({
+  //       name: arrayId,
+  //       feeds: arrayFeeds,
+  //     });
+  //   }
+  //   return sensorArrays;
+  // }
   
-  // =========
-  // = Menus =
-  // =========
+  // =============
+  // = UI Panels =
+  // =============
 
-  var panels = [
-    '#loadingPanel',
-    '#welcomePanel',
-    '#arrayPanel',
-    '#sensorPanel',
-    '#mapPanel',
-    '#sensorinfoPanel',
-    '#scannerPanel',
+  var allPanelIds = [
+    'loadingPanel',
+    'welcomePanel',
+    'arrayPanel',
+    'sensorPanel',
+    'mapPanel',
+    'sensorinfoPanel',
+    'scannerPanel',
   ];
+  
+  var panelEvents = {
+    scannerPanel: {
+      onShow: function() {
+        $('body').css('background', 'none');
+        if (arController!=null && !arController.isTracking()) arController.startTracking();
+      },
+      onHide: function() {
+        $('body').css('background', 'rgba(0,0,0,0.75)');
+        if (arController!=null && arController.isTracking()) arController.stopTracking();
+      },
+    },
+    sensorPanel: {
+      onShow: function() {
+        $("#scrubberInfo").html('');
+      },
+      onHide: function() {
+      },
+    },
+  };
   
   function _removeEntries(_entries, _entriesToRemove) {
     var ret = _entries.slice(); // copy
@@ -207,50 +245,58 @@
   }
   
   function _showPanels(panelIds) {
-    // AR controller
-    if (arController != null) {
-      var showScanner = ($.inArray('#scannerPanel', panelIds) != -1);
-      if (showScanner) {
-        if (!arController.isTracking()) arController.startTracking();
-      } else {
-        if (arController.isTracking()) arController.stopTracking();
+    var hiddenPanelIds = _removeEntries(allPanelIds, panelIds);
+    
+    // onHide
+    $.each(hiddenPanelIds, function(idx, panelId) {
+      if (panelEvents[panelId]!=null && panelEvents[panelId].onShow &&
+        $('#' + panelId).is(":visible")) {
+        panelEvents[panelId].onHide();
       }
-    }
+    });
+    
+    // onShow
+    $.each(panelIds, function(idx, panelId) {
+      if (panelEvents[panelId]!=null && panelEvents[panelId].onShow &&
+        $('#' + panelId).is(":visible")===false) {
+        panelEvents[panelId].onShow();
+      }
+    });
 
     // Panels
-    $(panelIds.join(', ')).show();
-    $(_removeEntries(panels, panelIds).join(', ')).hide();
+    $('#' + panelIds.join(', #')).show();
+    $('#' + hiddenPanelIds.join(', #')).hide();
   }
   
   function showLoadingsceen() {
-    _showPanels(['#loadingPanel']);
+    _showPanels(['loadingPanel']);
   }
 
   function showHomescreen(_sensorArrays) {
-    _showPanels(['#welcomePanel', '#mapPanel']);
+    _showPanels(['welcomePanel', 'mapPanel']);
     sensorArrays = _sensorArrays;
     mapPlot.setData(sensorArrays);
     mapPlot.draw();
   }
 
   function showArrayview(_sensorArray) {
-    _showPanels(['#arrayPanel', '#mapPanel']);
+    _showPanels(['arrayPanel', 'mapPanel']);
     sensorArray = _sensorArray;
     arrayPlot.setData(sensorArray.feeds);
     arrayPlot.draw();
   }
 
-  function showSensorview(_feed) {
-    _showPanels(['#sensorPanel', '#sensorinfoPanel']);
+  function showSensorview(_feed, _numEntries) {
+    _showPanels(['sensorPanel', 'sensorinfoPanel']);
     feed = _feed;
-    sensorPlot.setData(feed);
+    sensorPlot.setData(feed, _numEntries);
     sensorPlot.draw();
-    scrubberPlot.setData(feed);
+    scrubberPlot.setData(feed, _numEntries);
     scrubberPlot.draw();
   }
 
   function showScannerview() {
-    _showPanels(['#scannerPanel']);
+    _showPanels(['scannerPanel']);
   }
 </script>
 </head>
@@ -269,6 +315,7 @@
       <li><a href="javascript:showHomescreen(sensorArrays)">Home</a></li>
       <li><a href="javascript:showArrayview(sensorArray)">Array</a></li>
       <li><a href="javascript:showSensorview(feed)">Sensor</a></li>
+      <li><a href="javascript:showScannerview()">Scan</a></li>
     </ul>
     <span class="right">
       <a href="javascript:$('#debugPanel').toggle();">Info</a>
@@ -293,7 +340,7 @@
   <!-- = Loading = -->
   <!-- =========== -->
 
-  <div id="loadingPanel" class="span12 overlay">
+  <div id="loadingPanel" class="span12 panel">
     <p><img src="img/spinner.gif" width="16" height="16" alt="Loading...">
         Loading application... this may take a few seconds.</p>
   </div>
@@ -323,15 +370,14 @@
 
   <div id="sensorPanel" class="span6 panel">
     <canvas id="sensorplotCanvas" width="400" height="400"></canvas>
-    <p>
-      Show the last <a href="javascript:updateSensorPlot(feed, 24)">day</a>, 
-      <a href="javascript:updateSensorPlot(feed, 24*7)">week</a>, 
-      <a href="javascript:updateSensorPlot(feed, 24*7*30)">month</a>.
-    </p>
-
     <p><span id="scrubberInfo"></span>&nbsp;</p>
     <p>Tap and drag below to select a measurement within the period:</p>
     <canvas id="scrubberCanvas" width="500" height="100"></canvas>
+    <p>
+      Show the last <a href="javascript:showSensorview(feed, 24)">day</a>, 
+      <a href="javascript:showSensorview(feed, 24*7)">week</a>, 
+      <a href="javascript:showSensorview(feed, 24*7*30)">month</a>.
+    </p>
   </div>
 
   <div id="sensorinfoPanel" class="span6 panel">

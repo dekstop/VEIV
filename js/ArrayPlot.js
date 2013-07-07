@@ -19,10 +19,10 @@ function ArrayPlot(canvas, palette, options) {
   this.numEntries = null;
   
   this.displacementPlot = new DisplacementPlot(canvas, palette, jQuery.extend({}, options.sensorOptions));
-  this.displacementPlot.radius = this.options.sensorRadius;
+  this.displacementPlot.radius = this.options.plotRadius;
   this.displacementPlot.options.clear = false;
   this.displacementPlot.options.simplified = true;
-  this.displacementPlot.options.dotRadius = 1;
+  this.displacementPlot.options.dotRadius = this.options.sensorRadius;
 }
 
 ArrayPlot.prototype.setData = function(feeds, numEntries) {
@@ -34,7 +34,7 @@ ArrayPlot.prototype.setData = function(feeds, numEntries) {
 ArrayPlot.prototype.draw = function() {
   this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
   this.drawArray();
-  this.drawSensors();
+  // this.drawSensors();
   this.drawSensordata();
 };
 
@@ -48,7 +48,7 @@ ArrayPlot.prototype.drawArray = function() {
 
 ArrayPlot.prototype.drawSensors = function() {
   for (var i=0; i<this.feeds.length; i++) {
-    var angle = (this.options.sensorAngles[i] + 90) * Math.PI*2 / 360;
+    var angle = (this.options.sensorAngles[i] + 90 + 45/2) * Math.PI*2 / 360;
     var x = this.x + Math.cos(angle) * (this.radius + 0);
     var y = this.y + Math.sin(angle) * (this.radius + 0);
 
@@ -73,7 +73,7 @@ ArrayPlot.prototype.drawSensors = function() {
 
 ArrayPlot.prototype.drawSensordata = function() {
   for (var i=0; i<this.feeds.length; i++) {
-    var angle = (this.options.sensorAngles[i] + 90) * Math.PI*2 / 360;
+    var angle = (this.options.sensorAngles[i] + 90 + 45/2) * Math.PI*2 / 360;
     this.displacementPlot.x = this.x + Math.cos(angle) * this.radius;
     this.displacementPlot.y = this.y + Math.sin(angle) * this.radius;
     this.displacementPlot.setData(this.feeds[i], this.numEntries);
@@ -83,7 +83,7 @@ ArrayPlot.prototype.drawSensordata = function() {
 
 // ArrayPlot.prototype.drawHighlight = function(idx) {
 //   for (var i=0; i<this.feeds.length; i++) {
-//     var angle = (this.options.sensorAngles[i] + 90) * Math.PI*2 / 360;
+//     var angle = (this.options.sensorAngles[i] + 90 + 45/2) * Math.PI*2 / 360;
 //     this.displacementPlot.x = this.x + Math.cos(angle) * this.radius;
 //     this.displacementPlot.y = this.y + Math.sin(angle) * this.radius;
 //     this.displacementPlot.setData(this.feeds[i], this.numEntries);
@@ -97,13 +97,13 @@ ArrayPlot.prototype.drawSensordata = function() {
 
 ArrayPlot.prototype._getFeedIndexAt = function(x, y) {
   for (var i=0; i<this.feeds.length; i++) {
-    var angle = (this.options.sensorAngles[i] + 90) * Math.PI*2 / 360;
+    var angle = (this.options.sensorAngles[i] + 90 + 45/2) * Math.PI*2 / 360;
     var fx = this.x + Math.cos(angle) * this.radius;
     var fy = this.y + Math.sin(angle) * this.radius;
     var dx = fx - x;
     var dy = fy - y;
     var dist = Math.sqrt(dx*dx + dy*dy);
-    if (dist < this.options.sensorRadius * 4) {
+    if (dist < this.options.plotRadius) {
       return i;
     }
   }
