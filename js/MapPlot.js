@@ -237,10 +237,14 @@ MapPlot.prototype._handleClickEvent = function(e) {
   }
 };
 
+
 MapPlot.prototype.initEventHooks = function() {
   mapPlot = this;
+  mapPlot.isTouchSequence = false; // To prevent double-triggering on touch devices
+
   // mouse events
   $(this.canvas).on('mousedown', function(e) {
+    if (mapPlot.isTouchSequence) return;
     e.preventDefault();
   });
   $(window).on('mousemove', function(e) {
@@ -248,11 +252,13 @@ MapPlot.prototype.initEventHooks = function() {
   $(window).on('mouseup', function(e) {
   });
   $(this.canvas).on('click', function(e) {
+    if (mapPlot.isTouchSequence) return;
     mapPlot._handleClickEvent(e);
   });
   
   // touch events
   $(this.canvas).on('touchstart', function(e) {
+    mapPlot.isTouchSequence = true;
     if (!e.originalEvent.changedTouches) return;
     e.preventDefault();
     mapPlot._handleClickEvent(e.originalEvent.changedTouches[0]);
@@ -261,6 +267,7 @@ MapPlot.prototype.initEventHooks = function() {
     if (!e.originalEvent.changedTouches) return;
   });
   $(window).on('touchend touchcancel touchleave', function(e) {
+    setTimeout(function(){ mapPlot.isTouchSequence = false }, 20); // Timeout, in case mouse events trigger late
     if (!e.originalEvent.changedTouches) return;
   });
 };
