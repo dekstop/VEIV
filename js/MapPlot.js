@@ -219,18 +219,26 @@ MapPlot.prototype._handleClickEvent = function(e) {
   var arrayIdx = mapPlot._getSensorArrayIndex(e);
   if (arrayIdx != null) {
     var sensorArray = mapPlot.sensorArrayData[arrayIdx];
-    if (mapPlot.selectedSensorArray==null || // Is there a selected array?
+    if (mapPlot.selectedSensorArray==null || // Is there an existing array selection?
       (mapPlot.selectedSensorArray.name != sensorArray.name)) { // Is this the same array?
 
-      // Selected a different array
+      // Select a different array.
       showArrayview(mapPlot.sensorArrayData[arrayIdx]);
-      mapPlot.selectSensorArray(mapPlot.sensorArrayData[arrayIdx]);
     } else {
-      // In same array: refined selection: pick a sensor
+      // In same array. 
+      // Refine selection: pick a feed.
       var feedIdx = mapPlot._getFeedIndex(e);
       if (feedIdx !== null) {
         var feed = mapPlot.selectedSensorArray.feeds[feedIdx];
-        showSensorview(feed);
+        if (mapPlot.selectedFeed==null || // Is there an existing feed selection?
+          mapPlot.selectedFeed.name != feed.name) { // Is this the same feed?
+          
+          // Select a different feed.
+          showSensorview(feed);
+        } else {
+          // Return to the array.
+          showArrayview(mapPlot.selectedSensorArray); 
+        }
       }
     }
     mapPlot.draw();
@@ -267,7 +275,7 @@ MapPlot.prototype.initEventHooks = function() {
     if (!e.originalEvent.changedTouches) return;
   });
   $(window).on('touchend touchcancel touchleave', function(e) {
-    setTimeout(function(){ mapPlot.isTouchSequence = false }, 20); // Timeout, in case mouse events trigger late
+    setTimeout(function(){ mapPlot.isTouchSequence = false }, 10); // Timeout, in case mouse events trigger late
     if (!e.originalEvent.changedTouches) return;
   });
 };

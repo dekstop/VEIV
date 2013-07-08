@@ -230,7 +230,7 @@
   var panelEvents = {
     sensorPanel: {
       onShow: function() {
-        $("#scrubberInfo").html('');
+        $("#scrubberInfo").html('<br/>');
       },
       onHide: function() {
       },
@@ -245,6 +245,7 @@
       onHide: function() {
         $('body').css('background', 'rgba(0,0,0,0.75)');
         $('#scanButton').html('Scan a Sensor');
+        $('#scannerInfo').html('Cancelling...');
         if (arController!=null && arController.isTracking()) arController.stopTracking();
       },
     },
@@ -313,8 +314,8 @@
     arrayPlot.setData(sensorArray.feeds);
     arrayPlot.draw();
 
-    // mapPlot.selectSensorArray(sensorArray);
-    mapPlot.selectFeed(null);
+    mapPlot.selectSensorArray(sensorArray);
+    mapPlot.selectFeed(feed);
     mapPlot.draw();
 
     // Quick hack to generate AR overlay icons.
@@ -335,7 +336,7 @@
     scrubberPlot.setData(feed, _numEntries);
     scrubberPlot.draw();
 
-    // mapPlot.selectSensorArray(sensorArray);
+    mapPlot.selectSensorArray(sensorArray);
     mapPlot.selectFeed(feed);
     mapPlot.draw();
   }
@@ -412,7 +413,9 @@
   <!-- ======== -->
 
   <div id="welcomePanel" class="span6 panel">
-    <p>Select a sensor array by tapping an area on the site map.</p>
+    <h2>Please Select a Location.</h2>
+    <p>Tap an area on the site map, or scan an array marker.</p>
+    <img src="img/empty_array_plot.png" width="400" height="400" alt="Array Plot">
   </div>
   
   <div id="arrayPanel" class="span6 panel">

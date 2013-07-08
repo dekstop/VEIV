@@ -35,15 +35,14 @@ DisplacementPlot.prototype.setData = function(feed, numEntries) {
   // draw into off-screen buffer
   this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
   if (this.numEntries<2) return; // Nothing to draw.
-  this.drawPlotOverrun(this.feed.getValues());
+
+  // this.drawPlotOverrun(this.feed.getValues());
   this.drawThresholds();
   if (!this.options.simplified) {
     this.drawThresholdLabels();
   } 
   this.drawPlotDots();
-  // if (!this.options.simplified) {
-    this.drawPlotPath();
-  // }
+  this.drawPlotPath();
 }
 
 DisplacementPlot.prototype.draw = function() {

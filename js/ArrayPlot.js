@@ -34,8 +34,15 @@ ArrayPlot.prototype.setData = function(feeds, numEntries) {
 ArrayPlot.prototype.draw = function() {
   this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
   this.drawArray();
-  this.drawSensors();
+  // this.drawSensors();
   this.drawSensordata();
+  // Quick hack to generate empty array plot.
+  // var canvas = document.getElementById('arrayplotCanvas');
+  // var infoNode = document.getElementById('arrayPanel');
+  // var img = document.createElement('img');
+  // img.src = canvas.toDataURL('image/png');
+  // infoNode.appendChild(img);
+  
 };
 
 ArrayPlot.prototype.drawArray = function() {
@@ -56,18 +63,18 @@ ArrayPlot.prototype.drawSensors = function() {
     var displacement = this.feeds[i].getDisplacement();
     var style = this.palette.getColour(displacement);
 
-    // this.ctx.beginPath();
-    // this.ctx.arc(x, y, this.options.sensorRadius, 0, 2*Math.PI);
-    // this.ctx.fillStyle = style; 
-    // this.ctx.lineWidth = 2;
-    // this.ctx.fill();
+    this.ctx.beginPath();
+    this.ctx.arc(x, y, this.options.sensorRadius, 0, 2*Math.PI);
+    this.ctx.fillStyle = style; 
+    this.ctx.lineWidth = 2;
+    this.ctx.fill();
 
     // stroke
-    // this.ctx.beginPath();
-    // this.ctx.arc(x, y, this.options.sensorRadius * 2, 0, 2*Math.PI);
-    // this.ctx.strokeStyle = "rgba(90,90,90,1)"; 
-    // this.ctx.lineWidth = 2;
-    // this.ctx.stroke();
+    this.ctx.beginPath();
+    this.ctx.arc(x, y, this.options.sensorRadius * 2, 0, 2*Math.PI);
+    this.ctx.strokeStyle = "rgba(90,90,90,1)"; 
+    this.ctx.lineWidth = 2;
+    this.ctx.stroke();
   }
 };
 
