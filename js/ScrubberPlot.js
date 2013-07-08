@@ -51,7 +51,7 @@ ScrubberPlot.prototype.drawBand = function() {
     var x2 = age * this.canvas.width;
 
     this.ctx.beginPath();
-    this.ctx.rect(x1, 0, x2-x1, this.canvas.height);
+    this.ctx.rect(x1, 0, x2-x1+1, this.canvas.height);
     // ctx.noStroke();
     this.ctx.fillStyle = this.palette.getColour(displacement, age);
     this.ctx.fill();
