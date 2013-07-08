@@ -15,7 +15,6 @@
   <script src="js/ext/date.format.js" type="text/javascript" charset="utf-8"></script>
 
   <script src="js/SensorDataLoader.js" type="text/javascript" charset="utf-8"></script>
-  <script src="js/SensorDataGenerator.js" type="text/javascript" charset="utf-8"></script>
 
   <script src="js/MapPlot.js" type="text/javascript" charset="utf-8"></script>
   <script src="js/DisplacementPlot.js" type="text/javascript" charset="utf-8"></script>
@@ -87,12 +86,42 @@
   var arOptions = {
     trackerDataSetPath: 'markers/patterngen_large.zip',
     trackedObjects: ['1', '2', '3', '4'],
-    overlayImageFile: 'img/sensor.png',
+    sensorArrayTargets: {
+      '1': 'array05',
+      '2': 'array06',
+      '3': 'array07',
+      '4': 'array08',
+    },
+    overlayImageFile: {
+      '1': 'img/array05_noalpha.png',
+      '2': 'img/array06_noalpha.png',
+      '3': 'img/array07_noalpha.png',
+      '4': 'img/array08_noalpha.png',
+    }, 
     overlayImageHeight: 1,
-    onLoaded: function() { },
-    onClick: function(objectId) { $('#scannerInfo').html('Clicked: ' + objectId) },
-    onEnterFieldOfVision: function(objectId) { $('#scannerInfo').html('Found: ' + objectId) },
-    onExitFieldOfVision: function(objectId) { $('#scannerInfo').html('Searching location markers...') },
+    onLoaded: function(objectId) { },
+    _getSensorArrayData: function(arrayName) {
+      for (var i=0; i<sensorArrays.length; i++) {
+        if (sensorArrays[i].name=arrayName) {
+          return sensorArrays[i];
+        }
+      }
+      return null;
+    },
+    onEnterFieldOfVision: function(objectId) { 
+      var arrayName = arOptions.sensorArrayTargets[objectId];
+      markerSensorArrayData = arOptions._getSensorArrayData(arrayName);
+      $('#scannerInfo').html(
+        'Found location marker <b>' + arrayName + '</b>. Tap the icon to <a href="javascript:showArrayview(markerSensorArrayData)">display sensor data for this location</a>.');
+    },
+    onExitFieldOfVision: function(objectId) { 
+      $('#scannerInfo').html('Searching location markers...');
+      markerSensorArrayData = null;
+    },
+    onClick: function(objectId) { 
+      var arrayName = arOptions.sensorArrayTargets[objectId];
+      showArrayview(arOptions._getSensorArrayData(arrayName));
+    },
   };
 
   // ========
@@ -103,6 +132,8 @@
   var sensorArrays = null;
   var sensorArray = null;
   var feed = null;
+  
+  var markerSensorArrayData = null; // Data that is associated with the currently tracked AR marker.
   
   // plots
   var palette;
@@ -147,12 +178,7 @@
     
     arController = new ARController(arOptions);
     
-    // initialise the app once all data has been loaded
-    // var hasLoaded = false;
     $(document).one('ajaxStop', function() {
-      // if (hasLoaded) return; // Guard: only run this once
-      // hasLoaded = true;
-
       // data
       makeData();
 
@@ -162,8 +188,8 @@
       scrubberPlot.initEventHooks();
 
       // show application screen
-      // showArrayview(sensorArray);
-      showHomescreen(sensorArrays);
+      showArrayview(sensorArray);
+      // showHomescreen(sensorArrays);
       // showScannerview();
 
       // layouts
@@ -175,31 +201,11 @@
   // = Interactions =
   // ================
   
-  // TODO: refactor once we have a proper menu structure
   function makeData() {
-    // sensorArrays = getRandomisedSensorArrays();
     sensorArrays = SensorDataLoader.getData();
     sensorArray = sensorArrays[0];
     feed = sensorArray.feeds[0];
   }
-
-  // function getRandomisedSensorArrays() {
-  //   var sensorArrays = [];
-  //   for (var i=1; i<=11; i++) {
-  //     var arrayId = 'array' + (i<10 ? '0' : '') + i;
-  //     var arrayFeeds = [];
-  //     for (var j=1; j<8; j++) {
-  //       var sensorFeed = SensorDataGenerator.buildFeed();
-  //       sensorFeed.name = arrayId + '-sensor' + (j<10 ? '0' : '') + j;
-  //       arrayFeeds.push(sensorFeed);
-  //     }
-  //     sensorArrays.push({
-  //       name: arrayId,
-  //       feeds: arrayFeeds,
-  //     });
-  //   }
-  //   return sensorArrays;
-  // }
   
   // =============
   // = UI Panels =
@@ -216,21 +222,22 @@
   ];
   
   var panelEvents = {
-    scannerPanel: {
-      onShow: function() {
-        $('body').css('background', 'none');
-        if (arController!=null && !arController.isTracking()) arController.startTracking();
-      },
-      onHide: function() {
-        $('body').css('background', 'rgba(0,0,0,0.75)');
-        if (arController!=null && arController.isTracking()) arController.stopTracking();
-      },
-    },
     sensorPanel: {
       onShow: function() {
         $("#scrubberInfo").html('');
       },
       onHide: function() {
+      },
+    },
+    scannerPanel: {
+      onShow: function() {
+        $('body').css('background', 'none');
+        $('#scannerInfo').html('Searching location markers...');
+        if (arController!=null && !arController.isTracking()) arController.startTracking();
+      },
+      onHide: function() {
+        $('body').css('background', 'rgba(0,0,0,0.75)');
+        if (arController!=null && arController.isTracking()) arController.stopTracking();
       },
     },
   };
@@ -249,8 +256,9 @@
     
     // onHide
     $.each(hiddenPanelIds, function(idx, panelId) {
-      if (panelEvents[panelId]!=null && panelEvents[panelId].onShow &&
+      if (panelEvents[panelId]!=null && panelEvents[panelId].onHide &&
         $('#' + panelId).is(":visible")) {
+          console.log(panelId + '.onHide()');
         panelEvents[panelId].onHide();
       }
     });
@@ -259,6 +267,7 @@
     $.each(panelIds, function(idx, panelId) {
       if (panelEvents[panelId]!=null && panelEvents[panelId].onShow &&
         $('#' + panelId).is(":visible")===false) {
+        console.log(panelId + '.onShow()');
         panelEvents[panelId].onShow();
       }
     });
@@ -280,17 +289,29 @@
   }
 
   function showArrayview(_sensorArray) {
+    $('#arrayTitle').html(_sensorArray.name);
     _showPanels(['arrayPanel', 'mapPanel']);
     sensorArray = _sensorArray;
     arrayPlot.setData(sensorArray.feeds);
     arrayPlot.draw();
+    mapPlot.setData(sensorArrays);
+    mapPlot.draw();
+
+    // Quick hack to generate AR overlay icons.
+    // var canvas = document.getElementById('arrayplotCanvas');
+    // var infoNode = document.getElementById('arrayPanel');
+    // var img = document.createElement('img');
+    // img.src = canvas.toDataURL('image/png');
+    // infoNode.appendChild(img);
   }
 
   function showSensorview(_feed, _numEntries) {
+    $('#sensorTitle').html(_feed.name);
     _showPanels(['sensorPanel', 'sensorinfoPanel']);
     feed = _feed;
     sensorPlot.setData(feed, _numEntries);
     sensorPlot.draw();
+    
     scrubberPlot.setData(feed, _numEntries);
     scrubberPlot.draw();
   }
@@ -354,7 +375,8 @@
   </div>
   
   <div id="arrayPanel" class="span6 panel">
-    <p>Tap a sensor below to display a more detailed history:</p>
+    <h2>Location: <span id="arrayTitle"></span></h2>
+    <p>Tap a sensor below to display a more detailed history.</p>
     <canvas id="arrayplotCanvas" width="500" height="500"></canvas>
   </div>
   
@@ -369,6 +391,7 @@
   <!-- ========== -->
 
   <div id="sensorPanel" class="span6 panel">
+    <h2>Sensor: <span id="sensorTitle"></span></h2>
     <canvas id="sensorplotCanvas" width="400" height="400"></canvas>
     <p><span id="scrubberInfo"></span>&nbsp;</p>
     <p>Tap and drag below to select a measurement within the period:</p>
@@ -389,7 +412,7 @@
   <!-- ============ -->
 
   <div id="scannerPanel" class="span12 overlay">
-    <p>Scan a nearby location marker with your camera. Tap to display sensor data for this location.</p>
+    <p>Scan a nearby location marker with your camera.</p>
     <p><span id="scannerInfo"></span>&nbsp;</p>
   </div>
   

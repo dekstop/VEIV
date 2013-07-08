@@ -3,12 +3,21 @@
 function ARController(options) {
   this.options = options;
 
-  // Overlay image
-  this.arImg = new AR.ImageResource(this.options.overlayImageFile, {
-    onLoaded: function(w, h){ },
-    onError: function(){ alert('Error loading AR overlay image'); },
+  // Overlay images
+  this.arImg = {};
+  this.arImgD = {};
+  var arController = this;
+  $.each(this.options.trackedObjects, function(idx, objectId) {
+    arController.arImg[objectId] = new AR.ImageResource(
+      arController.options.overlayImageFile[objectId], 
+      { 
+        onLoaded: function(w, h){ }, 
+        onError: function(){ alert('Error loading AR overlay image'); },
+    });
+    arController.arImgD[objectId] = new AR.ImageDrawable(
+      arController.arImg[objectId], 
+      arController.options.overlayImageHeight);
   });
-  this.arImgD = new AR.ImageDrawable(this.arImg, this.options.overlayImageHeight);
 
   this.tracker = null;
   this.trackableObjects = null;
@@ -34,12 +43,12 @@ ARController.prototype.startTracking = function() {
     var trackable2DObject = (function() {
       var objectId = value;
       return new AR.Trackable2DObject(arController.tracker, objectId, { 
-        drawables: { cam: arController.arImgD }, 
-        onLoaded: arController.options.onLoaded(),
-        onClick: arController.options.onClick(objectId),
-        onEnterFieldOfVision: arController.options.onEnterFieldOfVision(objectId),
-        onExitFieldOfVision: arController.options.onExitFieldOfVision(objectId),
-        onError: function(){ alert('Error loading trackable object ' + objectId); },
+        drawables: { cam: arController.arImgD[objectId] }, 
+        onLoaded: function(){ arController.options.onLoaded(objectId) },
+        onClick: function(){ arController.options.onClick(objectId) },
+        onEnterFieldOfVision: function(){ arController.options.onEnterFieldOfVision(objectId) },
+        onExitFieldOfVision: function(){ arController.options.onExitFieldOfVision(objectId) },
+        onError: function(){ alert('Error loading trackable object ' + objectId) }, 
       });
     })();
     arController.trackableObjects.push(trackable2DObject);
@@ -54,18 +63,4 @@ ARController.prototype.stopTracking = function() {
     this.tracker = null;
     this.trackableObjects = null;
   }
-};
-
-ARController.prototype.getColour = function(displacement, age) {
-  age = (typeof age !== 'undefined' ? age : 1.0);
-  var thIdx = 0;
-  while (displacement > this.options.thresholds[thIdx]) thIdx++;
-  hue = this.options.hues[Math.min(thIdx, this.options.hues.length-1)];
-  return "hsla(" +
-    hue + "," + 
-    // Math.round(age * 100) + "%," +
-    "100%," +
-    Math.round(40 + age * 30) + "%," +
-    // "40%," +
-    "1.0)";
 };
