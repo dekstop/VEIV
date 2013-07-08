@@ -117,15 +117,15 @@ ScrubberPlot.prototype._highlightEntry = function(idx) {
   this.drawHighlight(idx);
   
   $(this.infoNode).html(
-    timestamp.format('yyyy-mm-dd HH:MM') + 
-    " <strong>X</strong>=" + val.x.toFixed(2) + 
+    "Measurement at " + timestamp.format('yyyy-mm-dd HH:MM') + 
+    "<br/> <strong>X</strong>=" + val.x.toFixed(2) + 
     " <strong>Y</strong>=" + val.y.toFixed(2) +
     " <strong>magnitude</strong>=" + val.displacement.toFixed(2));
 }
 
 ScrubberPlot.prototype._hideHighlightedEntry = function() {
   this.redrawAll();
-  $(this.infoNode).html("&nbsp;");
+  $(this.infoNode).html("&nbsp;<br />&nbsp;"); // Hack: vertical space for two rows.
 }
 
 ScrubberPlot.prototype._getFeedIndexAt = function(x, y) {

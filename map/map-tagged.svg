@@ -9,12 +9,12 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="600"
-   height="700"
+   width="400"
+   height="600"
    id="svg2"
    version="1.1"
    inkscape:version="0.48.2 r9819"
-   sodipodi:docname="map.svg"
+   sodipodi:docname="map-tagged.svg"
    inkscape:export-filename="/Users/mongo/data/Dropbox/VEIV Project/prototype/resources/map.png"
    inkscape:export-xdpi="90"
    inkscape:export-ydpi="90">
@@ -37,7 +37,7 @@
      inkscape:window-height="752"
      inkscape:window-x="0"
      inkscape:window-y="0"
-     inkscape:window-maximized="1" />
+     inkscape:window-maximized="0" />
   <metadata
      id="metadata7">
     <rdf:RDF>
@@ -46,7 +46,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -54,11 +54,11 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(0,-352.36218)">
+     transform="translate(0,-452.36218)">
     <g
        id="array01"
        inkscape:label=""
-       transform="translate(50,0)">
+       transform="translate(-30,32.857142)">
       <path
          inkscape:label=""
          transform="matrix(0.11535654,0,0,0.11535654,333.67408,994.99585)"
@@ -138,7 +138,7 @@
          transform="matrix(0.11535654,0,0,0.11535654,505.43591,994.99585)" />
     </g>
     <g
-       transform="translate(50.546729,-54.878408)"
+       transform="translate(-29.453271,-22.021269)"
        id="array02"
        inkscape:label="">
       <path
@@ -220,7 +220,7 @@
          transform="matrix(0.11535654,0,0,0.11535654,505.43591,994.99585)" />
     </g>
     <g
-       transform="translate(47.689588,-109.75683)"
+       transform="translate(-32.310412,-76.899689)"
        id="array03"
        inkscape:label="">
       <path
@@ -302,7 +302,7 @@
          transform="matrix(0.11535654,0,0,0.11535654,505.43591,994.99585)" />
     </g>
     <g
-       transform="translate(29.118158,-164.63522)"
+       transform="translate(-50.881842,-131.77808)"
        id="array04"
        inkscape:label="">
       <path
@@ -384,7 +384,7 @@
          transform="matrix(0.11535654,0,0,0.11535654,505.43591,994.99585)" />
     </g>
     <g
-       transform="translate(13.403869,-219.51363)"
+       transform="translate(-66.596131,-186.65649)"
        id="array05"
        inkscape:label="">
       <path
@@ -466,7 +466,7 @@
          transform="matrix(0.11535654,0,0,0.11535654,505.43591,994.99585)" />
     </g>
     <g
-       transform="translate(-3.7389853,-274.39204)"
+       transform="translate(-83.738985,-241.5349)"
        id="array06"
        inkscape:label="">
       <path
@@ -548,7 +548,7 @@
          transform="matrix(0.11535654,0,0,0.11535654,505.43591,994.99585)" />
     </g>
     <g
-       transform="translate(-25.167557,-329.27044)"
+       transform="translate(-105.16756,-296.4133)"
        id="array07"
        inkscape:label="">
       <path
@@ -630,7 +630,7 @@
          transform="matrix(0.11535654,0,0,0.11535654,505.43591,994.99585)" />
     </g>
     <g
-       transform="translate(-52.31041,-384.14884)"
+       transform="translate(-132.31041,-351.2917)"
        id="array08"
        inkscape:label="">
       <path
@@ -712,7 +712,7 @@
          transform="matrix(0.11535654,0,0,0.11535654,505.43591,994.99585)" />
     </g>
     <g
-       transform="translate(-83.73898,-439.02727)"
+       transform="translate(-163.73898,-406.17013)"
        id="array09"
        inkscape:label="">
       <path
@@ -794,7 +794,7 @@
          transform="matrix(0.11535654,0,0,0.11535654,505.43591,994.99585)" />
     </g>
     <g
-       transform="translate(-116.59612,-493.90573)"
+       transform="translate(-196.59612,-461.04859)"
        id="array10"
        inkscape:label="">
       <path
@@ -876,7 +876,7 @@
          transform="matrix(0.11535654,0,0,0.11535654,505.43591,994.99585)" />
     </g>
     <g
-       transform="translate(-139.45327,-548.78413)"
+       transform="translate(-219.45327,-515.92699)"
        id="array11"
        inkscape:label="">
       <path

@@ -11,7 +11,7 @@ function ArrayPlot(canvas, palette, options) {
   this.ctx = canvas.getContext('2d');
   this.x = this.canvas.width / 2;
   this.y = this.canvas.height / 2;
-  this.radius = Math.min(canvas.width / 2.5, canvas.height / 2.5) - 20;
+  this.radius = Math.min(canvas.width / 2.2, canvas.height / 2.2) - 20;
   this.palette = jQuery.extend({}, palette);
   this.options = jQuery.extend({}, options);
 
@@ -34,7 +34,7 @@ ArrayPlot.prototype.setData = function(feeds, numEntries) {
 ArrayPlot.prototype.draw = function() {
   this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
   this.drawArray();
-  // this.drawSensors();
+  this.drawSensors();
   this.drawSensordata();
 };
 
@@ -56,18 +56,18 @@ ArrayPlot.prototype.drawSensors = function() {
     var displacement = this.feeds[i].getDisplacement();
     var style = this.palette.getColour(displacement);
 
-    this.ctx.beginPath();
-    this.ctx.arc(x, y, this.options.sensorRadius, 0, 2*Math.PI);
-    this.ctx.fillStyle = style; 
-    this.ctx.lineWidth = 2;
-    this.ctx.fill();
+    // this.ctx.beginPath();
+    // this.ctx.arc(x, y, this.options.sensorRadius, 0, 2*Math.PI);
+    // this.ctx.fillStyle = style; 
+    // this.ctx.lineWidth = 2;
+    // this.ctx.fill();
 
     // stroke
-    this.ctx.beginPath();
-    this.ctx.arc(x, y, this.options.sensorRadius, 0, 2*Math.PI);
-    this.ctx.strokeStyle = "rgba(90,90,90,1)"; 
-    this.ctx.lineWidth = 2;
-    this.ctx.stroke();
+    // this.ctx.beginPath();
+    // this.ctx.arc(x, y, this.options.sensorRadius * 2, 0, 2*Math.PI);
+    // this.ctx.strokeStyle = "rgba(90,90,90,1)"; 
+    // this.ctx.lineWidth = 2;
+    // this.ctx.stroke();
   }
 };
 

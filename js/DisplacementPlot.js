@@ -35,9 +35,10 @@ DisplacementPlot.prototype.setData = function(feed, numEntries) {
   // draw into off-screen buffer
   this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
   if (this.numEntries<2) return; // Nothing to draw.
+  this.drawPlotOverrun(this.feed.getValues());
+  this.drawThresholds();
   if (!this.options.simplified) {
-    this.drawPlotOverrun(this.feed.getValues());
-    this.drawThresholds();
+    this.drawThresholdLabels();
   } 
   this.drawPlotDots();
   // if (!this.options.simplified) {
@@ -55,15 +56,17 @@ DisplacementPlot.prototype.draw = function() {
 DisplacementPlot.prototype.drawThresholds = function() {
   for (var i=0; i<this.options.thresholds.length; i++) {
     var ratio = this.options.thresholds[i] / this.options.range;
-
-    // circle
     this.ctx.beginPath();
     this.ctx.arc(this.x, this.y, this.radius*ratio, 0, 2*Math.PI);
     this.ctx.strokeStyle = "rgba(90,90,90,1)"; 
     this.ctx.lineWidth = 1;
     this.ctx.stroke();
+  }
+};
 
-    // label
+DisplacementPlot.prototype.drawThresholdLabels = function() {
+  for (var i=0; i<this.options.thresholds.length; i++) {
+    var ratio = this.options.thresholds[i] / this.options.range;
     this.ctx.font="10px Helvetica";
     this.ctx.textAlign="center";
     this.ctx.fillStyle = "rgba(110,110,110,1)"; 

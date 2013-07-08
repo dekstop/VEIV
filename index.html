@@ -23,7 +23,7 @@
   <script src="js/Palette.js" type="text/javascript" charset="utf-8"></script>
 
 	<script src="architect://architect.js"></script>
-	<script type="text/javascript" src="js/ext/ade.js"></script>
+  <script type="text/javascript" src="js/ext/ade.js"></script>
   <script src="js/ARController.js" type="text/javascript" charset="utf-8"></script>
 
   <style type="text/css" media="screen">
@@ -221,6 +221,9 @@
     'scannerPanel',
   ];
   
+  var currentPanels = null;
+  var previousPanels = null;
+  
   var panelEvents = {
     sensorPanel: {
       onShow: function() {
@@ -232,11 +235,13 @@
     scannerPanel: {
       onShow: function() {
         $('body').css('background', 'none');
+        $('#scanButton').html('Cancel');
         $('#scannerInfo').html('Searching location markers...');
         if (arController!=null && !arController.isTracking()) arController.startTracking();
       },
       onHide: function() {
         $('body').css('background', 'rgba(0,0,0,0.75)');
+        $('#scanButton').html('Scan a Sensor');
         if (arController!=null && arController.isTracking()) arController.stopTracking();
       },
     },
@@ -275,6 +280,13 @@
     // Panels
     $('#' + panelIds.join(', #')).show();
     $('#' + hiddenPanelIds.join(', #')).hide();
+
+    previousPanels = currentPanels;
+    currentPanels = panelIds;
+  }
+  
+  function _restorePreviousPanels() {
+    _showPanels(previousPanels);
   }
   
   function showLoadingsceen() {
@@ -307,7 +319,7 @@
 
   function showSensorview(_feed, _numEntries) {
     $('#sensorTitle').html(_feed.name);
-    _showPanels(['sensorPanel', 'sensorinfoPanel']);
+    _showPanels(['sensorPanel', 'mapPanel']);
     feed = _feed;
     sensorPlot.setData(feed, _numEntries);
     sensorPlot.draw();
@@ -318,6 +330,14 @@
 
   function showScannerview() {
     _showPanels(['scannerPanel']);
+  }
+  
+  function toggleScannerview() {
+    if ($('#scannerPanel').is(':visible')) {
+      _restorePreviousPanels();
+    } else {
+      showScannerview();
+    }
   }
 </script>
 </head>
@@ -331,16 +351,17 @@
   <!-- ======== -->
 
   <div id="statusBar" class="span12 lead">
-    <h1>Displacement Sensors</h1>
-    <ul class="menu">
+    <h1><a href="javascript:showHomescreen(sensorArrays)">Displacement Sensors</a></h1>
+    <!-- <ul class="menu">
       <li><a href="javascript:showHomescreen(sensorArrays)">Home</a></li>
       <li><a href="javascript:showArrayview(sensorArray)">Array</a></li>
       <li><a href="javascript:showSensorview(feed)">Sensor</a></li>
       <li><a href="javascript:showScannerview()">Scan</a></li>
-    </ul>
-    <span class="right">
-      <a href="javascript:$('#debugPanel').toggle();">Info</a>
-    </span>
+    </ul> -->
+    <p class="button right">
+      <!-- <a href="javascript:$('#debugPanel').toggle();">Debug</a> -->
+      <a href="javascript:toggleScannerview()"><span id="scanButton">Scan a Sensor</span></a>
+    </p>
     <div style="clear: both;"></div>
   </div>
 
@@ -371,40 +392,38 @@
   <!-- ======== -->
 
   <div id="welcomePanel" class="span6 panel">
-    Welcome.
+    <p>Welcome.</p>
   </div>
   
   <div id="arrayPanel" class="span6 panel">
     <h2>Location: <span id="arrayTitle"></span></h2>
     <p>Tap a sensor below to display a more detailed history.</p>
-    <canvas id="arrayplotCanvas" width="500" height="500"></canvas>
+    <canvas id="arrayplotCanvas" width="400" height="400"></canvas>
   </div>
   
-  <div id="mapPanel" class="span6 panel">
-    <div id="mapSvg"></div>
-    <!-- <object id="mapSvg" data="map/map.svg" type="image/svg+xml" width="600" height="700"></object> -->
-    <canvas id="mapCanvas" width="600" height="700"></canvas>
-  </div>
-  
-  <!-- ========== -->
-  <!-- = Sensor = -->
-  <!-- ========== -->
-
   <div id="sensorPanel" class="span6 panel">
     <h2>Sensor: <span id="sensorTitle"></span></h2>
     <canvas id="sensorplotCanvas" width="400" height="400"></canvas>
-    <p><span id="scrubberInfo"></span>&nbsp;</p>
+    <p><span id="scrubberInfo">&nbsp;<br /></span>&nbsp;</p>
     <p>Tap and drag below to select a measurement within the period:</p>
-    <canvas id="scrubberCanvas" width="500" height="100"></canvas>
+    <canvas id="scrubberCanvas" width="400" height="100"></canvas>
     <p>
       Show the last <a href="javascript:showSensorview(feed, 24)">day</a>, 
       <a href="javascript:showSensorview(feed, 24*7)">week</a>, 
       <a href="javascript:showSensorview(feed, 24*7*30)">month</a>.
     </p>
+    <p><a href="javascript:showArrayview(sensorArray)">Return to the sensor array.</a></p>
   </div>
 
   <div id="sensorinfoPanel" class="span6 panel">
-    Sensor info.
+    <p>Sensor info.</p>
+  </div>
+  
+  <div id="mapPanel" class="span6 panel">
+    <p>&nbsp;</p>
+    <div id="mapSvg"></div>
+    <!-- <object id="mapSvg" data="map/map.svg" type="image/svg+xml" width="600" height="700"></object> -->
+    <canvas id="mapCanvas" width="400" height="600"></canvas>
   </div>
   
   <!-- ============ -->
