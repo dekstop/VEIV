@@ -244,7 +244,7 @@
       },
       onHide: function() {
         $('body').css('background', 'rgba(0,0,0,0.75)');
-        $('#scanButton').html('Scan a Sensor');
+        $('#scanButton').html('Scan a Location Marker');
         $('#scannerInfo').html('Cancelling...');
         if (arController!=null && arController.isTracking()) arController.stopTracking();
       },
@@ -381,7 +381,7 @@
     </ul> -->
     <p class="button right">
       <!-- <a href="javascript:$('#debugPanel').toggle();">Debug</a> -->
-      <a href="javascript:toggleScannerview()"><span id="scanButton">Scan a Sensor</span></a>
+      <a href="javascript:toggleScannerview()"><span id="scanButton">Scan a Location Marker</span></a>
     </p>
     <div style="clear: both;"></div>
   </div>
@@ -414,7 +414,7 @@
 
   <div id="welcomePanel" class="span6 panel">
     <h2>Please Select a Location.</h2>
-    <p>Tap an area on the site map, or scan an array marker.</p>
+    <p>Tap an area on the site map, or scan a location marker.</p>
     <img src="img/empty_array_plot.png" width="400" height="400" alt="Array Plot">
   </div>
   
