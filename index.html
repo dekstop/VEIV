@@ -102,7 +102,7 @@
     onLoaded: function(objectId) { },
     _getSensorArrayData: function(arrayName) {
       for (var i=0; i<sensorArrays.length; i++) {
-        if (sensorArrays[i].name=arrayName) {
+        if (sensorArrays[i].name==arrayName) {
           return sensorArrays[i];
         }
       }
@@ -203,8 +203,9 @@
   
   function makeData() {
     sensorArrays = SensorDataLoader.getData();
-    sensorArray = sensorArrays[0];
-    feed = sensorArray.feeds[0];
+    mapPlot.setData(sensorArrays);
+    // sensorArray = sensorArrays[0];
+    // feed = sensorArray.feeds[0];
   }
   
   // =============
@@ -296,7 +297,9 @@
   function showHomescreen(_sensorArrays) {
     _showPanels(['welcomePanel', 'mapPanel']);
     sensorArrays = _sensorArrays;
-    mapPlot.setData(sensorArrays);
+
+    mapPlot.selectSensorArray(null);
+    mapPlot.selectFeed(null);
     mapPlot.draw();
   }
 
@@ -304,9 +307,12 @@
     $('#arrayTitle').html(_sensorArray.name);
     _showPanels(['arrayPanel', 'mapPanel']);
     sensorArray = _sensorArray;
+    feed = null;
     arrayPlot.setData(sensorArray.feeds);
     arrayPlot.draw();
-    mapPlot.setData(sensorArrays);
+
+    // mapPlot.selectSensorArray(sensorArray);
+    mapPlot.selectFeed(null);
     mapPlot.draw();
 
     // Quick hack to generate AR overlay icons.
@@ -326,6 +332,10 @@
     
     scrubberPlot.setData(feed, _numEntries);
     scrubberPlot.draw();
+
+    // mapPlot.selectSensorArray(sensorArray);
+    mapPlot.selectFeed(feed);
+    mapPlot.draw();
   }
 
   function showScannerview() {
@@ -338,6 +348,14 @@
     } else {
       showScannerview();
     }
+  }
+  
+  // =========
+  // = Debug =
+  // =========
+  
+  function logSensorArrayNames() {
+    console.log($.map(sensorArrays, function(val, idx) { return val.name; }).sort());
   }
 </script>
 </head>

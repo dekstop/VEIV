@@ -18,13 +18,26 @@ function MapPlot(svgObj, canvas, palette, options) {
   this.options = jQuery.extend({}, options);
 
   this.sensorArrayData = null;
-  this.mapPositions = null;
+  this.mapPositions = {};
+  this.selectedSensorArray = null;
+  this.selectedFeed = null;
 }
 
 // sensorArrayData: a list of sensor array records
 // [ { name: <svg_id>, feeds: <list> }, ...]
 MapPlot.prototype.setData = function(sensorArrayData) {
   this.sensorArrayData = sensorArrayData;
+}
+
+MapPlot.prototype.selectSensorArray = function(sensorArray) {
+  if (this.selectedSensorArray != sensorArray) {
+    this.selectedFeed = null;
+  }
+  this.selectedSensorArray = sensorArray;
+}
+
+MapPlot.prototype.selectFeed = function(feed) {
+  this.selectedFeed = feed;
 }
 
 // Call when DOM is ready
@@ -42,13 +55,14 @@ MapPlot.prototype.initLayout = function() {
   $.get(this.options.mapSvgFile, {}, function(res) {
     $(mapPlot.svgObj).html(res);
     mapPlot.svgRoot = $(mapPlot.svgObj).children()[0];
-    mapPlot._updateSensorArrayLayout();
+    mapPlot.mapPositions = mapPlot._buildMapLayout();
     mapPlot.draw();
   }, "text");
 };
 
 // Called by initLayout once the map SVG is loaded.
-MapPlot.prototype._updateSensorArrayLayout = function() {
+// Determines locations of sensors and sensor arrays in the SVG.
+MapPlot.prototype._buildMapLayout = function() {
 
   // TODO: is "this" now a MapPlot object, or a "res" from caller?
   if (this.svgRoot==null) return;
@@ -61,7 +75,7 @@ MapPlot.prototype._updateSensorArrayLayout = function() {
     var sensorArray = this.sensorArrayData[i]; 
     var svgGroup = $('#' + sensorArray.name, this.svgRoot)[0]; // find it on map
     sensorArrayPositions[sensorArray.name] = this._getMapBounds(svgGroup, mapOrigin);
-    sensorPositions[sensorArray.name] = {};
+    // sensorPositions[sensorArray.name] = {};
 
     // for every sensor in this array
     for (var j=0; j<sensorArray.feeds.length; j++) {
@@ -70,7 +84,7 @@ MapPlot.prototype._updateSensorArrayLayout = function() {
       sensorPositions[feed.name] = this._getMapPoint(svgSensor, mapOrigin);
     }
   }
-  this.mapPositions = {
+  return {
     sensorArrays: sensorArrayPositions,
     sensors: sensorPositions,
   };
@@ -92,16 +106,17 @@ MapPlot.prototype._getMapPoint = function(svgObject, mapOrigin) {
 MapPlot.prototype._getMapBounds = function(svgObject, mapOrigin) {
   var rect = svgObject.getBoundingClientRect();
   return {
-    x1: rect.left - mapOrigin.left + window.scrollX - 10,
-    y1: rect.top - mapOrigin.top + window.scrollY - 10,
-    x2: rect.left - mapOrigin.left + window.scrollX + rect.width + 10,
-    y2: rect.top - mapOrigin.top + window.scrollY + rect.height + 10,
+    x1: rect.left - mapOrigin.left + window.scrollX - 20,
+    y1: rect.top - mapOrigin.top + window.scrollY - 20,
+    x2: rect.left - mapOrigin.left + window.scrollX + rect.width + 20,
+    y2: rect.top - mapOrigin.top + window.scrollY + rect.height + 20,
   };
 };
 
 MapPlot.prototype.draw = function() {
   this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
   this.drawSensors();
+  this.drawHighlights();
 };
 
 MapPlot.prototype.drawSensors = function() {
@@ -131,17 +146,28 @@ MapPlot.prototype.drawSensors = function() {
   }
 };
 
-MapPlot.prototype.drawHighlight = function(sensorArray) {
-  var rect = this.mapPositions.sensorArrays[sensorArray.name];
-  this.ctx.strokeStyle = 'rgba(100,200,250,0.8)';
-  this.ctx.lineWidth = 4;
-  this.ctx.beginPath();
-  this.ctx.moveTo(rect.x1, rect.y1);
-  this.ctx.lineTo(rect.x1, rect.y2);
-  this.ctx.lineTo(rect.x2, rect.y2);
-  this.ctx.lineTo(rect.x2, rect.y1);
-  this.ctx.closePath();
-  this.ctx.stroke();
+MapPlot.prototype.drawHighlights = function() {
+  if ((this.selectedSensorArray !== null) && (this.mapPositions.sensorArrays)) {
+    var rect = this.mapPositions.sensorArrays[this.selectedSensorArray.name];
+    this.ctx.strokeStyle = 'rgba(100,200,250,0.8)';
+    this.ctx.lineWidth = (this.selectedFeed == null ? 8 : 2);
+    this.ctx.beginPath();
+    this.ctx.moveTo(rect.x1, rect.y1);
+    this.ctx.lineTo(rect.x1, rect.y2);
+    this.ctx.lineTo(rect.x2, rect.y2);
+    this.ctx.lineTo(rect.x2, rect.y1);
+    this.ctx.closePath();
+    this.ctx.stroke();
+  }
+  
+  if ((this.selectedFeed !== null) && (this.mapPositions.sensors)) {
+    var pos = this.mapPositions.sensors[this.selectedFeed.name];
+    this.ctx.beginPath();
+    this.ctx.arc(pos.x, pos.y, pos.radius * 3, 0, 2*Math.PI);
+    this.ctx.strokeStyle = 'rgba(100,200,250,0.8)';
+    this.ctx.lineWidth = 8;
+    this.ctx.stroke();
+  }
 }
 
 // ==================
@@ -168,6 +194,49 @@ MapPlot.prototype._getSensorArrayIndex = function(e) {
   );
 };
 
+MapPlot.prototype._getFeedIndexAt = function(x, y) {
+  for (var i=0; i< this.selectedSensorArray.feeds.length; i++) {
+    var feed = this.selectedSensorArray.feeds[i];
+    var pos = this.mapPositions.sensors[feed.name];
+    if (Math.abs(pos.x - x) < pos.radius * 2 &&
+      Math.abs(pos.y - y) < pos.radius * 2) {
+
+      return i;
+    }
+  }
+  return null;
+};
+
+MapPlot.prototype._getFeedIndex = function(e) {
+  return this._getFeedIndexAt(
+    e.pageX - $(this.canvas).offset().left,
+    e.pageY - $(this.canvas).offset().top
+  );
+};
+
+// Can be a mouse click or touch tap.
+MapPlot.prototype._handleClickEvent = function(e) {
+  var arrayIdx = mapPlot._getSensorArrayIndex(e);
+  if (arrayIdx != null) {
+    var sensorArray = mapPlot.sensorArrayData[arrayIdx];
+    if (mapPlot.selectedSensorArray==null || // Is there a selected array?
+      (mapPlot.selectedSensorArray.name != sensorArray.name)) { // Is this the same array?
+
+      // Selected a different array
+      showArrayview(mapPlot.sensorArrayData[arrayIdx]);
+      mapPlot.selectSensorArray(mapPlot.sensorArrayData[arrayIdx]);
+    } else {
+      // In same array: refined selection: pick a sensor
+      var feedIdx = mapPlot._getFeedIndex(e);
+      if (feedIdx !== null) {
+        var feed = mapPlot.selectedSensorArray.feeds[feedIdx];
+        showSensorview(feed);
+      }
+    }
+    mapPlot.draw();
+  }
+};
+
 MapPlot.prototype.initEventHooks = function() {
   mapPlot = this;
   // mouse events
@@ -179,29 +248,17 @@ MapPlot.prototype.initEventHooks = function() {
   $(window).on('mouseup', function(e) {
   });
   $(this.canvas).on('click', function(e) {
-    var idx = mapPlot._getSensorArrayIndex(e);
-    if (idx!=null) {
-      showArrayview(mapPlot.sensorArrayData[idx]);
-      mapPlot.draw();
-      mapPlot.drawHighlight(mapPlot.sensorArrayData[idx]);
-    }
+    mapPlot._handleClickEvent(e);
   });
   
   // touch events
   $(this.canvas).on('touchstart', function(e) {
     if (!e.originalEvent.changedTouches) return;
     e.preventDefault();
-    var idx = mapPlot._getSensorArrayIndex(e.originalEvent.changedTouches[0]);
-    if (idx!=null) {
-      showArrayview(mapPlot.sensorArrayData[idx]);
-      mapPlot.draw();
-      mapPlot.drawHighlight(mapPlot.sensorArrayData[idx]);
-    }
-    // e.originalEvent.changedTouches[0]
+    mapPlot._handleClickEvent(e.originalEvent.changedTouches[0]);
   });
   $(window).on('touchmove', function(e) {
     if (!e.originalEvent.changedTouches) return;
-    // e.originalEvent.changedTouches[0]
   });
   $(window).on('touchend touchcancel touchleave', function(e) {
     if (!e.originalEvent.changedTouches) return;
